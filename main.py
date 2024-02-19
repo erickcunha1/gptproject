@@ -4,6 +4,7 @@ from docx import Document
 from openai import OpenAI
 from pathlib import Path
 import sqlite3
+from tkinter import messagebox
 
 class SimpleGUI:
     def __init__(self, root):
@@ -135,7 +136,7 @@ class SimpleGUI:
                 doc.add_paragraph(resposta)
 
         doc.save(caminho_arquivo)
-        print("Conteúdo modificado foi salvo com sucesso.")
+        messagebox.showinfo('Documento gerado!', 'Documento salvo com sucesso!')
 
     def __del__(self):
         # Fechar a conexão com o banco de dados quando a instância for destruída
