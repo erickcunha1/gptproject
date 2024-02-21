@@ -120,9 +120,8 @@ class SimpleGUI:
             prompts = self.get_prompts_from_db(prompt_key)
             client = OpenAI(api_key='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')
 
-            # Adiciona uma seção no documento para cada topico
             doc.add_heading(topico, level=1)
-
+            
             for prompt in prompts:
                 response = client.chat.completions.create(
                     model="gpt-3.5-turbo",
@@ -131,8 +130,6 @@ class SimpleGUI:
                     ]
                 )
                 resposta = response.choices[0].message.content
-
-                # Adiciona a resposta como um parágrafo na seção correspondente
                 doc.add_paragraph(resposta)
 
         doc.save(caminho_arquivo)

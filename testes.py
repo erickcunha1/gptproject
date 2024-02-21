@@ -6,6 +6,8 @@ from tkinter import messagebox
 from openai import OpenAI
 from docx import Document
 from pathlib import Path
+from datetime import datetime
+
 
 class InterfaceGrafica:
     def __init__(self, master):
@@ -102,10 +104,13 @@ class InterfaceGrafica:
                         "Posicionamento Conclusivo"
                     ]
 
-                    caminho_arquivo = Path.home() / "Desktop" / "chat.docx"
+                    # Gerar um nome de arquivo único com base na hora atual
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    caminho_arquivo = Path.home() / "Desktop" / f"{self.item_combobox.get()}_{timestamp}.docx"
+
                     doc = Document()
                     client = OpenAI(api_key='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')
-
+                    
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
                         
@@ -116,8 +121,6 @@ class InterfaceGrafica:
                             ]
                         )
                         resposta = response.choices[0].message.content
-
-                        # Adiciona a resposta como um parágrafo na seção correspondente
                         doc.add_paragraph(resposta)
 
                     doc.save(caminho_arquivo)
