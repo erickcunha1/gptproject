@@ -33,7 +33,7 @@ class InterfaceGrafica:
         self.item_combobox = ttk.Combobox(self.frame, state="readonly", width=40)
         self.item_combobox.grid(row=2, column=1, pady=10)
 
-        self.mostrar_dados_button = tk.Button(self.frame, text="Mostrar Dados", command=self.mostrar_dados)
+        self.mostrar_dados_button = tk.Button(self.frame, text="Gerar Documento", command=self.mostrar_dados)
         self.mostrar_dados_button.grid(row=3, column=0, columnspan=2, pady=10)
 
         # Lista de dicionários para armazenar os dados extraídos
