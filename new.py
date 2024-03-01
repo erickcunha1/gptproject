@@ -10,11 +10,11 @@ from docx import Document
 from pathlib import Path
 from datetime import datetime
 import openai
-import sqlite3
 
 
 class InterfaceGrafica(QMainWindow):
     def __init__(self):
+        load_dotenv()
         super(InterfaceGrafica, self).__init__()
 
         self.setWindowTitle("Gerador de Documentos Jurídicos")
@@ -205,7 +205,7 @@ class InterfaceGrafica(QMainWindow):
 
                     doc = Document()
                     client = openai.OpenAI(api_key='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')
-
+                    
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
 
