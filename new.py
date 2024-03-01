@@ -198,7 +198,7 @@ class InterfaceGrafica(QMainWindow):
                     caminho_arquivo = Path.home() / "Desktop" / f" ETP{item_selecionado}_{timestamp}.docx"
 
                    
-                    client = openai.OpenAI(api_key='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')
+                    client = openai.OpenAI(api_key=os.environ.get('KEY')
 
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
