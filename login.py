@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QPushButton, QLineEdit,
-    QComboBox, QVBoxLayout, QWidget, QFileDialog, QMessageBox
+    QComboBox, QVBoxLayout, QWidget, QFileDialog, QDialog, QMessageBox
 )
 from PyQt5.QtGui import QPalette, QColor
 from PyQt5.QtCore import Qt, pyqtSlot
@@ -12,6 +12,42 @@ from datetime import datetime
 import openai
 import sqlite3
 
+class LoginInterface(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Login")
+        self.setGeometry(300, 300, 300, 150)
+
+        layout = QVBoxLayout()
+
+        self.label_username = QLabel("Usuário:")
+        self.username_entry = QLineEdit()
+
+        self.label_password = QLabel("Senha:")
+        self.password_entry = QLineEdit()
+        self.password_entry.setEchoMode(QLineEdit.Password)
+
+        self.login_button = QPushButton("Login", self)
+        self.login_button.clicked.connect(self.verificar_credenciais)
+
+        layout.addWidget(self.label_username)
+        layout.addWidget(self.username_entry)
+        layout.addWidget(self.label_password)
+        layout.addWidget(self.password_entry)
+        layout.addWidget(self.login_button)
+
+        self.setLayout(layout)
+
+    def verificar_credenciais(self):
+        usuario = self.username_entry.text()
+        senha = self.password_entry.text()
+
+        # Verifique se as credenciais são válidas (isso pode ser personalizado conforme necessário)
+        if usuario == "admin" and senha == "senha123":
+            self.accept()  # Credenciais corretas, permita o acesso
+        else:
+            QMessageBox.warning(self, "Erro de Login", "Usuário ou senha incorretos.")
 
 class InterfaceGrafica(QMainWindow):
     def __init__(self):
@@ -229,7 +265,6 @@ class InterfaceGrafica(QMainWindow):
     def closeEvent(self, event):
         self.db_connection.close()
 
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
@@ -241,7 +276,16 @@ if __name__ == "__main__":
     palette.setColor(QPalette.ButtonText, Qt.white)
     app.setPalette(palette)
 
-    window = InterfaceGrafica()
-    window.setGeometry(100, 100, 800, 400)
-    window.show()
-    sys.exit(app.exec_())
+    # Janela de Login
+    login_interface = LoginInterface()
+    resultado_login = login_interface.exec_()  # Executa a janela de login modal
+
+    if resultado_login == QDialog.Accepted:  # Se o login foi bem-sucedido
+        # Inicialize a interface principal
+        window = InterfaceGrafica()
+        window.setGeometry(100, 100, 800, 400)
+        window.show()
+
+        sys.exit(app.exec_())
+    else:
+        sys.exit(0)
