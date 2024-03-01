@@ -123,9 +123,14 @@ class InterfaceGrafica(QMainWindow):
 
                 # Disconnect the signal before clearing and updating the combo box
                 self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
+
+                # Sort the items alphabetically
+                sorted_itens = sorted(itens, key=lambda x: x.lower())
+
                 self.item_combobox.clear()
-                self.item_combobox.addItems(itens)
+                self.item_combobox.addItems(sorted_itens)
                 self.item_combobox.setCurrentIndex(-1)
+
                 # Reconnect the signal after updating the combo box
                 self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
 
@@ -142,13 +147,18 @@ class InterfaceGrafica(QMainWindow):
         df_filtrado = self.df_original[self.df_original['Descrição do Item'].str.lower().str.contains(filtro)]
         itens_filtrados = df_filtrado['Descrição do Item'].unique()
 
+        # Sort the items alphabetically before adding them to the combo box
+        sorted_itens = sorted(itens_filtrados, key=lambda x: x.lower())
+
         # Disconnect the signal before clearing and updating the combo box
         self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
         self.item_combobox.clear()
-        self.item_combobox.addItems(itens_filtrados)
+        self.item_combobox.addItems(sorted_itens)
         self.item_combobox.setCurrentIndex(-1)
         # Reconnect the signal after updating the combo box
         self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
+
+
 
     @pyqtSlot(int)
     def atualizar_dados_selecionados(self, index):
@@ -198,7 +208,7 @@ class InterfaceGrafica(QMainWindow):
                     caminho_arquivo = Path.home() / "Desktop" / f" ETP{item_selecionado}_{timestamp}.docx"
 
                    
-                    client = openai.OpenAI(api_key='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')
+                    client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
