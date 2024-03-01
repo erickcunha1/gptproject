@@ -97,6 +97,8 @@ class InterfaceGrafica(QMainWindow):
         self.db_connection = sqlite3.connect('dados_documentos.db')
         self.create_table()
 
+        self.df_original = pd.DataFrame()  # Adicione esta linha para inicializar o DataFrame
+
         # Tentar carregar os dados do último arquivo selecionado
         self.carregar_dados_salvos()
 
@@ -137,10 +139,15 @@ class InterfaceGrafica(QMainWindow):
             self.output_label.setStyleSheet("font-size: 12px; color: #27AE60;")
 
             self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
+            
+            # Ordena os itens em ordem alfabética antes de adicioná-los ao combobox
+            itens_ordenados = sorted([item[0] for item in itens])
+            
             self.item_combobox.clear()
-            self.item_combobox.addItems([item[0] for item in itens])
+            self.item_combobox.addItems(itens_ordenados)
             self.item_combobox.setCurrentIndex(-1)
             self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
+
 
     def abrir_arquivo(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Selecione um arquivo Excel", "", "Arquivos Excel (*.xlsx)")
@@ -207,58 +214,59 @@ class InterfaceGrafica(QMainWindow):
     def mostrar_dados(self):
         self.manual_selection = False
 
-        item_selecionado = self.item_combobox.currentText()
+        items_selecionados = [self.item_combobox.itemText(i) for i in range(self.item_combobox.count()) if self.item_combobox.itemCheckState(i) == Qt.Checked]
 
-        if item_selecionado:
-            print(f"Dados para '{item_selecionado}':")
+        if items_selecionados:
+            for item_selecionado in items_selecionados:
+                print(f"Dados para '{item_selecionado}':")
 
-            for linha in self.linhas_dados:
-                if linha['Descrição do Item'] == item_selecionado:
-                    lista_dados = [
-                        linha['Prompt1-objeto'],
-                        linha['Prompt2-Justificativa'],
-                        linha['Prompt3-justificativa-quantitativo'],
-                        linha['Prompt4-fundamentação legal'],
-                        linha['Prompt5-detalhamento técnico'],
-                        linha['Prompt6-justificativa-parcelamento'],
-                        linha['Prompt7-posicionamento-conclusivo']
-                    ]
+                for linha in self.linhas_dados:
+                    if linha['Descrição do Item'] == item_selecionado:
+                        lista_dados = [
+                            linha['Prompt1-objeto'],
+                            linha['Prompt2-Justificativa'],
+                            linha['Prompt3-justificativa-quantitativo'],
+                            linha['Prompt4-fundamentação legal'],
+                            linha['Prompt5-detalhamento técnico'],
+                            linha['Prompt6-justificativa-parcelamento'],
+                            linha['Prompt7-posicionamento-conclusivo']
+                        ]
 
-                    self.insert_data(item_selecionado, lista_dados)
+                        self.insert_data(item_selecionado, lista_dados)
 
-                    tab_order = [
-                        "Objeto",
-                        "Justificativa",
-                        "Justificativa do Quantitativo",
-                        "Fundamentação Legal",
-                        "Detalhamento Técnico",
-                        "Justificativa do Parcelamento",
-                        "Posicionamento Conclusivo"
-                    ]
+                        tab_order = [
+                            "Objeto",
+                            "Justificativa",
+                            "Justificativa do Quantitativo",
+                            "Fundamentação Legal",
+                            "Detalhamento Técnico",
+                            "Justificativa do Parcelamento",
+                            "Posicionamento Conclusivo"
+                        ]
 
-                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    caminho_arquivo = Path.home() / "Desktop" / f"{item_selecionado}_{timestamp}.docx"
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        caminho_arquivo = Path.home() / "Desktop" / f"{item_selecionado}_{timestamp}.docx"
 
-                    doc = Document()
-                    client = openai.OpenAI(api_key='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')
+                        doc = Document()
+                        client = openai.OpenAI(api_key='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')
 
-                    for i, prompt_valor in enumerate(lista_dados):
-                        doc.add_heading(tab_order[i], level=1)
+                        for i, prompt_valor in enumerate(lista_dados):
+                            doc.add_heading(tab_order[i], level=1)
 
-                        response = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {"role": "user", "content": prompt_valor}
-                            ]
-                        )
-                        resposta = response.choices[0].message.content
-                        doc.add_paragraph(resposta)
+                            response = client.chat.completions.create(
+                                model="gpt-3.5-turbo",
+                                messages=[
+                                    {"role": "user", "content": prompt_valor}
+                                ]
+                            )
+                            resposta = response.choices[0].message.content
+                            doc.add_paragraph(resposta)
 
-                    doc.save(caminho_arquivo)
-                    QMessageBox.information(self, 'Documento gerado!', 'Documento salvo com sucesso!')
+                        doc.save(caminho_arquivo)
+                        QMessageBox.information(self, 'Documento gerado!', 'Documento salvo com sucesso!')
 
         else:
-            print("Selecione um item antes de mostrar os dados.")
+            print("Selecione pelo menos um item antes de mostrar os dados.")
 
         self.manual_selection = True
 
