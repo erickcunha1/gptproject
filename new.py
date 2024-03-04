@@ -15,18 +15,19 @@ class LoginDialog(QDialog):
         super(LoginDialog, self).__init__()
 
         self.setWindowTitle("Login")
+        self.setGeometry(300, 300, 300, 150)
 
         layout = QVBoxLayout()
 
         self.username_entry = QLineEdit(self)
-        self.username_entry.setPlaceholderText("Username")
+        self.username_entry.setPlaceholderText("Usuario")
         self.password_entry = QLineEdit(self)
-        self.password_entry.setPlaceholderText("Password")
+        self.password_entry.setPlaceholderText("Senha")
         self.password_entry.setEchoMode(QLineEdit.Password)
 
         form_layout = QFormLayout()
-        form_layout.addRow("Username:", self.username_entry)
-        form_layout.addRow("Password:", self.password_entry)
+        form_layout.addRow("Usuario:", self.username_entry)
+        form_layout.addRow("Senha:", self.password_entry)
 
         buttons = QDialogButtonBox(
             QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
@@ -205,10 +206,10 @@ class InterfaceGrafica(QMainWindow):
                     ]
 
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    caminho_arquivo = Path.home() / "Desktop" / f" ETP{item_selecionado}_{timestamp}.docx"
+                    caminho_arquivo = Path.home() / "Desktop" / f" ETP - {item_selecionado}_{timestamp}.docx"
 
                    
-                    client = openai.OpenAI(api_key='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')
+                    client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
