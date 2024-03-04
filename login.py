@@ -1,299 +1,40 @@
-import sys
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QPushButton, QLineEdit,
-    QComboBox, QVBoxLayout, QWidget, QFileDialog, QDialog, QMessageBox
-)
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtCore import Qt, pyqtSlot
-import pandas as pd
-from docx import Document
-from pathlib import Path
-from datetime import datetime
-import openai
-import sqlite3
+from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QFormLayout, QDialogButtonBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QLineEdit, QVBoxLayout
+from PyQt5.QtCore import Qt
 
-class LoginInterface(QDialog):
+
+
+class LoginDialog(QDialog):
     def __init__(self):
-        super().__init__()
+        super(LoginDialog, self).__init__()
 
         self.setWindowTitle("Login")
         self.setGeometry(300, 300, 300, 150)
 
         layout = QVBoxLayout()
 
-        self.label_username = QLabel("Usuário:")
-        self.username_entry = QLineEdit()
-
-        self.label_password = QLabel("Senha:")
-        self.password_entry = QLineEdit()
+        self.username_entry = QLineEdit(self)
+        self.username_entry.setPlaceholderText("Usuario")
+        self.password_entry = QLineEdit(self)
+        self.password_entry.setPlaceholderText("Senha")
         self.password_entry.setEchoMode(QLineEdit.Password)
 
-        self.login_button = QPushButton("Login", self)
-        self.login_button.clicked.connect(self.verificar_credenciais)
+        form_layout = QFormLayout()
+        form_layout.addRow("Usuario:", self.username_entry)
+        form_layout.addRow("Senha:", self.password_entry)
 
-        layout.addWidget(self.label_username)
-        layout.addWidget(self.username_entry)
-        layout.addWidget(self.label_password)
-        layout.addWidget(self.password_entry)
-        layout.addWidget(self.login_button)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
+            Qt.Horizontal, self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+
+        layout.addLayout(form_layout)
+        layout.addWidget(buttons)
 
         self.setLayout(layout)
 
-    def verificar_credenciais(self):
-        usuario = self.username_entry.text()
-        senha = self.password_entry.text()
-
-        # Verifique se as credenciais são válidas (isso pode ser personalizado conforme necessário)
-        if usuario == "admin" and senha == "senha123":
-            self.accept()  # Credenciais corretas, permita o acesso
-        else:
-            QMessageBox.warning(self, "Erro de Login", "Usuário ou senha incorretos.")
-
-class InterfaceGrafica(QMainWindow):
-    def __init__(self):
-        super(InterfaceGrafica, self).__init__()
-
-        self.setWindowTitle("Gerador de Documentos Jurídicos")
-
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-
-        layout = QVBoxLayout()
-
-        self.label = QLabel("Selecione um arquivo Excel:")
-        self.label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2C3E50;")
-
-        self.button = QPushButton("Escolher Arquivo", self)
-        self.button.setStyleSheet("font-size: 12px; background-color: #3498DB; color: white;")
-        self.button.clicked.connect(self.abrir_arquivo)
-
-        self.output_label = QLabel("", self)
-        self.output_label.setStyleSheet("font-size: 12px; color: #27AE60;")
-
-        self.search_entry = QLineEdit(self)
-        self.search_entry.setPlaceholderText("Pesquisar")
-        self.search_entry.setStyleSheet("font-size: 12px;")
-        self.search_entry.textChanged.connect(self.filtrar_itens)
-
-        self.item_combobox = QComboBox(self)
-        self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
-        self.item_combobox.setStyleSheet("font-size: 12px;")
-
-        self.mostrar_dados_button = QPushButton("Gerar Documento", self)
-        self.mostrar_dados_button.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button.clicked.connect(self.mostrar_dados)
-
-        layout.addWidget(self.label)
-        layout.addWidget(self.button)
-        layout.addWidget(self.output_label)
-        layout.addWidget(self.search_entry)
-        layout.addWidget(self.item_combobox)
-        layout.addWidget(self.mostrar_dados_button)
-
-        central_widget.setLayout(layout)
-
-        self.linhas_dados = []
-        self.manual_selection = True
-        self.db_connection = sqlite3.connect('dados_documentos.db')
-        self.create_table()
-
-        self.df_original = pd.DataFrame()  # Adicione esta linha para inicializar o DataFrame
-
-        # Tentar carregar os dados do último arquivo selecionado
-        self.carregar_dados_salvos()
-
-    def create_table(self):
-        cursor = self.db_connection.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS documentos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                item TEXT,
-                prompt1 TEXT,
-                prompt2 TEXT,
-                prompt3 TEXT,
-                prompt4 TEXT,
-                prompt5 TEXT,
-                prompt6 TEXT,
-                prompt7 TEXT,
-                timestamp TEXT
-            )
-        ''')
-        self.db_connection.commit()
-
-    def insert_data(self, item, prompts):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        cursor = self.db_connection.cursor()
-        cursor.execute('''
-            INSERT INTO documentos (item, prompt1, prompt2, prompt3, prompt4, prompt5, prompt6, prompt7, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (item, prompts[0], prompts[1], prompts[2], prompts[3], prompts[4], prompts[5], prompts[6], timestamp))
-        self.db_connection.commit()
-
-    def carregar_dados_salvos(self):
-        cursor = self.db_connection.cursor()
-        cursor.execute('SELECT DISTINCT item FROM documentos')
-        itens = cursor.fetchall()
-
-        if itens:
-            self.output_label.setText("Dados carregados do último arquivo.")
-            self.output_label.setStyleSheet("font-size: 12px; color: #27AE60;")
-
-            self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
-            
-            # Ordena os itens em ordem alfabética antes de adicioná-los ao combobox
-            itens_ordenados = sorted([item[0] for item in itens])
-            
-            self.item_combobox.clear()
-            self.item_combobox.addItems(itens_ordenados)
-            self.item_combobox.setCurrentIndex(-1)
-            self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
-
-
-    def abrir_arquivo(self):
-        filepath, _ = QFileDialog.getOpenFileName(self, "Selecione um arquivo Excel", "", "Arquivos Excel (*.xlsx)")
-
-        if filepath:
-            try:
-                df = pd.read_excel(filepath)
-                self.df_original = df.copy()
-
-                itens = df['Descrição do Item'].unique()
-
-                self.output_label.setText(f"Arquivo {filepath} lido com sucesso.")
-                self.output_label.setStyleSheet("font-size: 12px; color: #27AE60;")
-
-                self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
-                self.item_combobox.clear()
-                self.item_combobox.addItems(itens)
-                self.item_combobox.setCurrentIndex(-1)
-                self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
-
-                for _, linha in df.iterrows():
-                    dados_linha = {coluna: linha[coluna] for coluna in df.columns}
-                    self.linhas_dados.append(dados_linha)
-
-                # Limpar dados antigos e inserir novos dados na base de dados
-                cursor = self.db_connection.cursor()
-                cursor.execute('DELETE FROM documentos')
-                self.db_connection.commit()
-
-                for _, linha in df.iterrows():
-                    dados_linha = {coluna: linha[coluna] for coluna in df.columns}
-                    self.linhas_dados.append(dados_linha)
-                    self.insert_data(dados_linha['Descrição do Item'], [
-                        dados_linha['Prompt1-objeto'],
-                        dados_linha['Prompt2-Justificativa'],
-                        dados_linha['Prompt3-justificativa-quantitativo'],
-                        dados_linha['Prompt4-fundamentação legal'],
-                        dados_linha['Prompt5-detalhamento técnico'],
-                        dados_linha['Prompt6-justificativa-parcelamento'],
-                        dados_linha['Prompt7-posicionamento-conclusivo']
-                    ])
-
-            except Exception as e:
-                self.output_label.setText(f"Erro ao ler o arquivo:\n{e}")
-                self.output_label.setStyleSheet("font-size: 12px; color: #E74C3C;")
-
-    def filtrar_itens(self):
-        filtro = self.search_entry.text().strip().lower()
-        df_filtrado = self.df_original[self.df_original['Descrição do Item'].str.lower().str.contains(filtro)]
-        itens_filtrados = df_filtrado['Descrição do Item'].unique()
-
-        self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
-        self.item_combobox.clear()
-        self.item_combobox.addItems(itens_filtrados)
-        self.item_combobox.setCurrentIndex(-1)
-        self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
-
-    @pyqtSlot(int)
-    def atualizar_dados_selecionados(self, index):
-        if self.manual_selection:
-            item_selecionado = self.item_combobox.currentText()
-            print(f"Atualizar dados para '{item_selecionado}':")
-
-    def mostrar_dados(self):
-        self.manual_selection = False
-
-        items_selecionados = [self.item_combobox.itemText(i) for i in range(self.item_combobox.count()) if self.item_combobox.itemCheckState(i) == Qt.Checked]
-
-        if items_selecionados:
-            for item_selecionado in items_selecionados:
-                print(f"Dados para '{item_selecionado}':")
-
-                for linha in self.linhas_dados:
-                    if linha['Descrição do Item'] == item_selecionado:
-                        lista_dados = [
-                            linha['Prompt1-objeto'],
-                            linha['Prompt2-Justificativa'],
-                            linha['Prompt3-justificativa-quantitativo'],
-                            linha['Prompt4-fundamentação legal'],
-                            linha['Prompt5-detalhamento técnico'],
-                            linha['Prompt6-justificativa-parcelamento'],
-                            linha['Prompt7-posicionamento-conclusivo']
-                        ]
-
-                        self.insert_data(item_selecionado, lista_dados)
-
-                        tab_order = [
-                            "Objeto",
-                            "Justificativa",
-                            "Justificativa do Quantitativo",
-                            "Fundamentação Legal",
-                            "Detalhamento Técnico",
-                            "Justificativa do Parcelamento",
-                            "Posicionamento Conclusivo"
-                        ]
-
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        caminho_arquivo = Path.home() / "Desktop" / f"{item_selecionado}_{timestamp}.docx"
-
-                        doc = Document()
-                        client = openai.OpenAI(api_key='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')
-
-                        for i, prompt_valor in enumerate(lista_dados):
-                            doc.add_heading(tab_order[i], level=1)
-
-                            response = client.chat.completions.create(
-                                model="gpt-3.5-turbo",
-                                messages=[
-                                    {"role": "user", "content": prompt_valor}
-                                ]
-                            )
-                            resposta = response.choices[0].message.content
-                            doc.add_paragraph(resposta)
-
-                        doc.save(caminho_arquivo)
-                        QMessageBox.information(self, 'Documento gerado!', 'Documento salvo com sucesso!')
-
-        else:
-            print("Selecione pelo menos um item antes de mostrar os dados.")
-
-        self.manual_selection = True
-
-    def closeEvent(self, event):
-        self.db_connection.close()
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-
-    palette = QPalette()
-    palette.setColor(QPalette.Window, QColor("#ECF0F1"))
-    palette.setColor(QPalette.WindowText, Qt.black)
-    palette.setColor(QPalette.Button, QColor("#3498DB"))
-    palette.setColor(QPalette.ButtonText, Qt.white)
-    app.setPalette(palette)
-
-    # Janela de Login
-    login_interface = LoginInterface()
-    resultado_login = login_interface.exec_()  # Executa a janela de login modal
-
-    if resultado_login == QDialog.Accepted:  # Se o login foi bem-sucedido
-        # Inicialize a interface principal
-        window = InterfaceGrafica()
-        window.setGeometry(100, 100, 800, 400)
-        window.show()
-
-        sys.exit(app.exec_())
-    else:
-        sys.exit(0)
+    def get_username_password(self):
+        return self.username_entry.text(), self.password_entry.text()
+    

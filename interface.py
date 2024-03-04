@@ -1,47 +1,14 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFormLayout, QMessageBox, QDialogButtonBox, QWidget, QComboBox, QFileDialog
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFormLayout, QMessageBox, QWidget, QComboBox, QFileDialog
+from PyQt5.QtCore import pyqtSlot
 import openai
 from docx import Document
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
 import os
+from login import LoginDialog
 
-
-class LoginDialog(QDialog):
-    def __init__(self):
-        super(LoginDialog, self).__init__()
-
-        self.setWindowTitle("Login")
-        self.setGeometry(300, 300, 300, 150)
-
-        layout = QVBoxLayout()
-
-        self.username_entry = QLineEdit(self)
-        self.username_entry.setPlaceholderText("Usuario")
-        self.password_entry = QLineEdit(self)
-        self.password_entry.setPlaceholderText("Senha")
-        self.password_entry.setEchoMode(QLineEdit.Password)
-
-        form_layout = QFormLayout()
-        form_layout.addRow("Usuario:", self.username_entry)
-        form_layout.addRow("Senha:", self.password_entry)
-
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal, self)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-
-        layout.addLayout(form_layout)
-        layout.addWidget(buttons)
-
-        self.setLayout(layout)
-
-    def get_username_password(self):
-        return self.username_entry.text(), self.password_entry.text()
 
 
 class InterfaceGrafica(QMainWindow):
@@ -116,23 +83,19 @@ class InterfaceGrafica(QMainWindow):
             try:
                 df = pd.read_excel(filepath)
                 self.df_original = df.copy()
-
                 itens = df['Descrição do Item'].unique()
 
                 self.output_label.setText(f"Arquivo {filepath} lido com sucesso.")
                 self.output_label.setStyleSheet("font-size: 12px; color: #27AE60;")
 
-                # Disconnect the signal before clearing and updating the combo box
                 self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
 
-                # Sort the items alphabetically
                 sorted_itens = sorted(itens, key=lambda x: x.lower())
 
                 self.item_combobox.clear()
                 self.item_combobox.addItems(sorted_itens)
                 self.item_combobox.setCurrentIndex(-1)
 
-                # Reconnect the signal after updating the combo box
                 self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
 
                 for _, linha in df.iterrows():
@@ -148,29 +111,26 @@ class InterfaceGrafica(QMainWindow):
         df_filtrado = self.df_original[self.df_original['Descrição do Item'].str.lower().str.contains(filtro)]
         itens_filtrados = df_filtrado['Descrição do Item'].unique()
 
-        # Sort the items alphabetically before adding them to the combo box
         sorted_itens = sorted(itens_filtrados, key=lambda x: x.lower())
-
-        # Disconnect the signal before clearing and updating the combo box
         self.item_combobox.currentIndexChanged.disconnect(self.atualizar_dados_selecionados)
+
         self.item_combobox.clear()
         self.item_combobox.addItems(sorted_itens)
         self.item_combobox.setCurrentIndex(-1)
-        # Reconnect the signal after updating the combo box
         self.item_combobox.currentIndexChanged.connect(self.atualizar_dados_selecionados)
-
-
 
     @pyqtSlot(int)
     def atualizar_dados_selecionados(self, index):
-        # Check the flag to determine if the change is due to manual selection
         if self.manual_selection:
             item_selecionado = self.item_combobox.currentText()
             print(f"Atualizar dados para '{item_selecionado}':")
-            # Implement any additional logic if needed when combo box selection changes
 
     def mostrar_dados(self):
-        # Set the flag to False to indicate that the change is not due to manual selection
+        # Desconectar o sinal para evitar chamadas múltiplas ao método
+        self.mostrar_dados_button.clicked.disconnect(self.mostrar_dados)
+
+        self.mostrar_dados_button.setEnabled(False)  # Desativa o botão
+
         self.manual_selection = False
 
         item_selecionado = self.item_combobox.currentText()
@@ -208,18 +168,13 @@ class InterfaceGrafica(QMainWindow):
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     caminho_arquivo = Path.home() / "Desktop" / f" ETP - {item_selecionado}_{timestamp}.docx"
 
-                   
                     client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
-                        
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
-                            messages=[
-                                {"role": "user", "content": prompt_valor}
-                            ]
-                        )
+                            messages=[{"role": "user", "content": prompt_valor}])
                         resposta = response.choices[0].message.content
                         doc.add_paragraph(resposta)
 
@@ -229,12 +184,14 @@ class InterfaceGrafica(QMainWindow):
         else:
             print("Selecione um item antes de mostrar os dados.")
 
-        # Set the flag back to True after handling the button click
+        # Reconectar o sinal e reativar o botão após a conclusão
+        self.mostrar_dados_button.clicked.connect(self.mostrar_dados)
+        self.mostrar_dados_button.setEnabled(True)  # Reativa o botão
+
+        # Restaurar a flag para True
         self.manual_selection = True
 
-
     def mostrar_dados_TR(self):
-        # Set the flag to False to indicate that the change is not due to manual selection
         self.manual_selection = False
 
         item_selecionado = self.item_combobox.currentText()
@@ -250,8 +207,6 @@ class InterfaceGrafica(QMainWindow):
                         linha['Prompt2-TR-Fundamentação da Contratação'],
                         linha['Prompt3-TR- Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto'],
                         linha['Prompt4-TR- Requisitos da Contratação']
-
-
                     ]
 
                     tab_order = [
@@ -264,18 +219,13 @@ class InterfaceGrafica(QMainWindow):
                     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                     caminho_arquivo = Path.home() / "Desktop" / f" TR{item_selecionado}_{timestamp}.docx"
 
-                   
                     client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
                     for i, prompt_valor in enumerate(lista_dados):
                         doc.add_heading(tab_order[i], level=1)
-                        
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
-                            messages=[
-                                {"role": "user", "content": prompt_valor}
-                            ]
-                        )
+                            messages=[{"role": "user", "content": prompt_valor}])
                         resposta = response.choices[0].message.content
                         doc.add_paragraph(resposta)
 
@@ -284,13 +234,9 @@ class InterfaceGrafica(QMainWindow):
 
         else:
             print("Selecione um item antes de mostrar os dados.")
-
-        # Set the flag back to True after handling the button click
         self.manual_selection = True
 
-
-
-if __name__ == "__main__":
+def execute():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
 
@@ -299,8 +245,6 @@ if __name__ == "__main__":
 
     if result == QDialog.Accepted:
         username, password = login_dialog.get_username_password()
-
-        # Perform authentication here (replace this with your own authentication logic)
         authenticated = username == "admin" and password == "admin"
 
         if authenticated:
@@ -312,3 +256,6 @@ if __name__ == "__main__":
             QMessageBox.critical(None, 'Authentication Failed', 'Invalid username or password.')
     else:
         sys.exit()
+
+if __name__ == "__main__":
+    execute()
