@@ -44,6 +44,20 @@ class InterfaceGrafica(QMainWindow):
         self.mostrar_dados_button.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
         self.mostrar_dados_button.clicked.connect(self.mostrar_dados)
 
+
+        self.mostrar_dados_button2 = QPushButton("Gerar Termo de Referência - TR", self)
+        self.mostrar_dados_button2.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
+        self.mostrar_dados_button2.clicked.connect(self.mostrar_dados_TR)
+
+        self.mostrar_dados_button3 = QPushButton("Gerar Edital de Licitação", self)
+        self.mostrar_dados_button3.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
+        self.mostrar_dados_button3.clicked.connect(self.mostrar_dados)
+
+        self.mostrar_dados_button4 = QPushButton("Gerar Contrato", self)
+        self.mostrar_dados_button4.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
+        self.mostrar_dados_button4.clicked.connect(self.mostrar_dados)
+        
+
         layout.addWidget(self.label)
         layout.addWidget(self.button)
         layout.addWidget(self.output_label)
@@ -53,6 +67,10 @@ class InterfaceGrafica(QMainWindow):
 
         central_widget.setLayout(layout)
 
+        layout.addWidget(self.mostrar_dados_button)
+        layout.addWidget(self.mostrar_dados_button2)
+        layout.addWidget(self.mostrar_dados_button3)
+        layout.addWidget(self.mostrar_dados_button4)
         # Lista de dicionários para armazenar os dados extraídos
         self.linhas_dados = []
 
@@ -63,7 +81,7 @@ class InterfaceGrafica(QMainWindow):
             try:
                 df = pd.read_excel(filepath)
                 self.df_original = df.copy()
-                itens = df['Descrição do Item'].unique()
+                itens = sorted(df['Descrição do Item'].unique())  # Ordenar os itens em ordem alfabética
 
                 self.output_label.setText(f"Arquivo {filepath} lido com sucesso.")
                 self.output_label.setStyleSheet("font-size: 12px; color: #27AE60;")
@@ -80,12 +98,24 @@ class InterfaceGrafica(QMainWindow):
                 self.output_label.setStyleSheet("font-size: 12px; color: #E74C3C;")
 
     def filtrar_itens(self):
+        if not hasattr(self, 'df_original'):
+            QMessageBox.warning(self, 'Atenção', 'Selecione a planilha primeiro.')
+            return
         filtro = self.search_entry.text().strip().lower()
         df_filtrado = self.df_original[self.df_original['Descrição do Item'].str.lower().str.contains(filtro)]
         itens_filtrados = df_filtrado['Descrição do Item'].unique()
 
+        itens_selecionados = [item.text() for item in self.item_list.selectedItems()]  # Armazena os itens selecionados
+
         self.item_list.clear()
         self.item_list.addItems(itens_filtrados)
+
+        # Restaura a seleção dos itens previamente selecionados
+        for index in range(self.item_list.count()):
+            item = self.item_list.item(index)
+            if item.text() in itens_selecionados:
+                item.setSelected(True)
+
 
     @pyqtSlot()
     def atualizar_dados_selecionados(self):
@@ -144,6 +174,51 @@ class InterfaceGrafica(QMainWindow):
 
         else:
             print("Selecione um item antes de mostrar os dados.")
+
+    def mostrar_dados_TR(self):
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+
+        if selected_items:
+            for item_selecionado in selected_items:
+                print(f"Dados para '{item_selecionado}':")
+                doc = Document()
+                doc.add_heading("ESTUDO TÉCNICO PRELIMINAR - ETP", level=1)
+                for linha in self.linhas_dados:
+                    if linha['Descrição do Item'] == item_selecionado:
+                        lista_dados = [
+                            linha['Prompt1-Termo de Referência'],
+                            linha['Prompt2-TR-Fundamentação da Contratação'],
+                            linha['Prompt3-TR- Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto'],
+                            linha['Prompt4-TR- Requisitos da Contratação']
+                        ]
+
+                        tab_order = [
+                            "Condições Gerais da Contratação",
+                            "Fundamentação da Contratação",
+                            "Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto",
+                            "Requisitos da Contratação"
+                        ]
+
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        caminho_arquivo = Path.home() / "Desktop" / f" TR - {item_selecionado}_{timestamp}.docx"
+
+                        client = openai.OpenAI(api_key=os.environ.get('KEY'))
+
+                        for i, prompt_valor in enumerate(lista_dados):
+                            doc.add_heading(tab_order[i], level=1)
+                            response = client.chat.completions.create(
+                                model="gpt-3.5-turbo",
+                                messages=[{"role": "user", "content": prompt_valor}])
+                            resposta = response.choices[0].message.content
+                            doc.add_paragraph(resposta)
+
+                        doc.save(caminho_arquivo)
+                        QMessageBox.information(self, 'Documento gerado!', 'Documento salvo com sucesso!')
+
+        else:
+            print("Selecione um item antes de mostrar os dados.")
+        self.manual_selection = True
+
 
 
 def execute():
