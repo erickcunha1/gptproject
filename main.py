@@ -1,4 +1,4 @@
-from interface import execute
+from gerador_doc import execute
 
 execute()
 
