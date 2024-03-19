@@ -8,6 +8,9 @@ from datetime import datetime
 from pathlib import Path
 import os
 from interface_login import LoginDialog
+from PyQt5.QtWidgets import QProgressBar
+
+
 
 class InterfaceGrafica(QMainWindow):
     def __init__(self):
@@ -74,6 +77,13 @@ class InterfaceGrafica(QMainWindow):
         # Lista de dicionários para armazenar os dados extraídos
         self.linhas_dados = []
 
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setStyleSheet("font-size: 12px;")
+        self.progress_bar.setMaximum(30)
+        self.progress_bar.setValue(0)
+
+        layout.addWidget(self.progress_bar)
+
     def abrir_arquivo(self):
         filepath, _ = QFileDialog.getOpenFileName(self, "Selecione um arquivo Excel", "", "Arquivos Excel (*.xlsx)")
 
@@ -121,103 +131,136 @@ class InterfaceGrafica(QMainWindow):
     def atualizar_dados_selecionados(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         print("Itens selecionados:", selected_items)
+        self.progress_bar.setValue(len(selected_items))
+        if len(selected_items) > 30:
+            # Se o limite de 30 itens for ultrapassado, desmarcar o último item selecionado
+            last_item = self.item_list.selectedItems()[-1]
+            last_item.setSelected(False)
+            QMessageBox.warning(self, 'Atenção', 'Limite de 30 itens selecionados alcançado.')
+
 
     def mostrar_dados(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
 
         if selected_items:
-            for item_selecionado in selected_items:
-                print(f"Dados para '{item_selecionado}':")
-                doc = Document()
-                doc.add_heading("ESTUDO TÉCNICO PRELIMINAR - ETP", level=1)
-                for linha in self.linhas_dados:
-                    if linha['Descrição do Item'] == item_selecionado:
-                        lista_dados = [
-                            linha['Prompt1-objeto'],
-                            linha['Prompt2-Justificativa'],
-                            linha['Prompt3-previsão de contratação'],
-                            linha['Prompt4-requisitos da contratação'],
-                            linha['Prompt5-justificativa-quantitativo'],
-                            linha['Prompt6-estimativa de valor'],
-                            linha['Prompt7-fundamentação legal'],
-                            linha['Prompt8-justificativa-parcelamento'],
-                            linha['Prompt9-posicionamento-conclusivo']
-                        ]
+            doc = Document()
+            doc.add_heading("Documentos Gerados", level=1)  # Adiciona um cabeçalho geral
 
-                        tab_order = [
-                            "Objeto",
-                            "Justificativa da necessidade da contratação, considerado o problema a ser resolvido sob a perspectiva do interesse público",
-                            "Demonstração da previsão da contratação", 
-                            "Requisitos para Contratação",
-                            "Estimativas e Justificativas das quantidades para a contratação",
-                            "Estimativa de valor",
-                            "Fundamentação Legal",
-                            "Justificativa do Parcelamento",
-                            "Posicionamento Conclusivo"
-                        ]
+            for i in range(1, 10): 
+                titulo = self.get_titulo_name(i)  # Obtem o título correspondente
+                doc.add_heading(titulo, level=1)  # Adiciona o título
 
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        caminho_arquivo = Path.home() / "Desktop" / f" ETP - {item_selecionado}_{timestamp}.docx"
+                for item_selecionado in selected_items:
+                    print(f"Dados para '{item_selecionado}':")
+                    doc.add_heading(f"Item: {item_selecionado}", level=3)  # Adiciona um cabeçalho para cada item
+                    
+                    for linha in self.linhas_dados:
+                        if linha['Descrição do Item'] == item_selecionado:
+                            prompt_nome = f'Prompt{i}-{self.get_prompt_name(i)}'  # Obtem o nome do prompt
+                            prompt_valor = linha[prompt_nome]  # Obtem o valor do prompt
 
-                        client = openai.OpenAI(api_key=os.environ.get('KEY'))
+                            client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
-                        for i, prompt_valor in enumerate(lista_dados):
-                            doc.add_heading(tab_order[i], level=1)
                             response = client.chat.completions.create(
                                 model="gpt-3.5-turbo",
                                 messages=[{"role": "user", "content": prompt_valor}])
                             resposta = response.choices[0].message.content
                             doc.add_paragraph(resposta)
 
-                        doc.save(caminho_arquivo)
-                        QMessageBox.information(self, 'Documento gerado!', 'Documento salvo com sucesso!')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            caminho_arquivo = Path.home() / "Desktop" / f"Documentos_Gerados_{timestamp}.docx"
 
+            doc.save(caminho_arquivo)
+            QMessageBox.information(self, 'Documentos gerados!', f'Documento salvo com sucesso em: {caminho_arquivo}')
         else:
             print("Selecione um item antes de mostrar os dados.")
 
+            
     def mostrar_dados_TR(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
 
         if selected_items:
-            for item_selecionado in selected_items:
-                print(f"Dados para '{item_selecionado}':")
-                doc = Document()
-                doc.add_heading("ESTUDO TÉCNICO PRELIMINAR - ETP", level=1)
-                for linha in self.linhas_dados:
-                    if linha['Descrição do Item'] == item_selecionado:
-                        lista_dados = [
-                            linha['Prompt1-Termo de Referência'],
-                            linha['Prompt2-TR-Fundamentação da Contratação'],
-                            linha['Prompt3-TR- Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto'],
-                            linha['Prompt4-TR- Requisitos da Contratação']
-                        ]
+            doc = Document()
+            doc.add_heading("ESTUDO TÉCNICO PRELIMINAR - ETP", level=1)
 
-                        tab_order = [
-                            "Condições Gerais da Contratação",
-                            "Fundamentação da Contratação",
-                            "Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto",
-                            "Requisitos da Contratação"
-                        ]
+            for i in range(1, 5):
+                titulo = self.get_titulo_tr(i)
+                doc.add_heading(text=titulo, level=1)
 
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        caminho_arquivo = Path.home() / "Desktop" / f" TR - {item_selecionado}_{timestamp}.docx"
+                for item_selecionado in self.linhas_dados:
+                    print(f"Dados para '{item_selecionado}':")
+            
+                    for linha in self.linhas_dados:
+                        if linha['Descrição do Item'] == item_selecionado:
+                            prompt_nome = f'Prompt{i}-{self.get_prompt_tr(i)}'  # Obtem o nome do prompt
+                            prompt_valor = linha[prompt_nome]  # Obtem o valor do prompt
 
-                        client = openai.OpenAI(api_key=os.environ.get('KEY'))
+                            client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
-                        for i, prompt_valor in enumerate(lista_dados):
-                            doc.add_heading(tab_order[i], level=1)
                             response = client.chat.completions.create(
                                 model="gpt-3.5-turbo",
                                 messages=[{"role": "user", "content": prompt_valor}])
                             resposta = response.choices[0].message.content
                             doc.add_paragraph(resposta)
 
-                        doc.save(caminho_arquivo)
-                        QMessageBox.information(self, 'Documento gerado!', 'Documento salvo com sucesso!')
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            caminho_arquivo = Path.home() / "Desktop" / f"Documentos_Gerados_{timestamp}.docx"
 
+            doc.save(caminho_arquivo)
+            QMessageBox.information(self, 'Documentos gerados!', f'Documento salvo com sucesso em: {caminho_arquivo}')
         else:
             print("Selecione um item antes de mostrar os dados.")
-        self.manual_selection = True
+
+
+    def get_prompt_tr(self, number):
+        titulo_names = {
+            1:'Prompt1-Termo de Referência',
+            2:'Prompt2-TR-Fundamentação da Contratação',
+            3:'Prompt3-TR- Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto',
+            4:'Prompt4-TR- Requisitos da Contratação'
+        }
+        return titulo_names.get(number, 'Desconhecido')
+    
+    def get_titulo_tr(self, number):
+
+        titulo_name = { 
+            1:"Condições Gerais da Contratação",
+            2:"Fundamentação da Contratação",
+            3:"Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto",
+            4:"Requisitos da Contratação"
+        }
+        return titulo_name.get(number, 'Desconhecido')
+    
+
+    def get_prompt_name(self, prompt_number):
+        # Função para obter o nome do prompt com base no número
+        prompt_names = {
+            1: "objeto",
+            2: "Justificativa",
+            3: "previsão de contratação",
+            4: "requisitos da contratação",
+            5: "justificativa-quantitativo",
+            6: "estimativa de valor",
+            7: "fundamentação legal",
+            8: "justificativa-parcelamento",
+            9: "posicionamento-conclusivo"
+        }
+        return prompt_names.get(prompt_number, "Desconhecido")
+
+    def get_titulo_name(self, titulo_number):
+        # Função para obter o nome do título com base no número
+        titulo_names = {
+            1: "Objeto",
+            2: "Justificativa da necessidade da contratação, considerado o problema a ser resolvido sob a perspectiva do interesse público",
+            3: "Demonstração da previsão da contratação",
+            4: "Requisitos para Contratação",
+            5: "Estimativas e Justificativas das quantidades para a contratação",
+            6: "Estimativa de valor",
+            7: "Fundamentação Legal",
+            8: "Justificativa do Parcelamento",
+            9: "Posicionamento Conclusivo"
+        }
+        return titulo_names.get(titulo_number, 'Desconhecido')
 
 
 
