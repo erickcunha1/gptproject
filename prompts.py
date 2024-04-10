@@ -1,18 +1,11 @@
-from mysql.connector import connect
+from database import mysql_connection
+
 
 class PromptsInfo:
     def __init__(self, host, user, passwd, database=None) -> None:
+        mysql_connection(host, user, passwd, database)
         self.connection = self.mysql_connection(host, user, passwd, database)
         self.cursor = self.connection.cursor()
-
-    def mysql_connection(self, host, user, passwd, database=None):
-        connection = connect(
-            host=host,
-            user=user,
-            passwd=passwd,
-            database=database
-        )
-        return connection
 
     @staticmethod
     def get_prompt_tr(number):
@@ -45,7 +38,6 @@ class PromptsInfo:
             6: "prompt_fundamentacao_legal",
             7: "prompt_justificativa_parcelamento",
             8: "prompt_pocicionamento_conclusivo",
-            # 9: "posicionamento-conclusivo"
         }
         return prompt_names.get(prompt_number, 'Desconhecido')
 
@@ -60,6 +52,5 @@ class PromptsInfo:
             6: "Fundamentação Legal",
             7: "Justificativa Parcelamento",
             8: "Posicionamento Conclusivo",
-            # 9: "Posicionamento Conclusivo"
         }
         return titulo_names.get(titulo_number, 'Desconhecido')
