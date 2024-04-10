@@ -59,23 +59,28 @@ class LoginDialog(QDialog):
     def login(self):
         username = self.username_entry.text()
         password = self.password_entry.text()
-
         if not username or not password:
             QMessageBox.warning(self, "Erro", "Por favor, preencha todos os campos.")
-            return
+            return False
 
         try:
             query = "SELECT * FROM users WHERE username = %s AND password = %s"
             self.cursor.execute(query, (username, password))
             account = self.cursor.fetchone()
-            self.conexao.close()
             if account:
                 self.accept()
+                return True
             else:
                 QMessageBox.warning(self, "Erro", "Usuário ou senha incorretos.")
+                self.clear_fields()  # Limpa os campos de entrada
+                return False
         except mysql.connector.Error as e:
             QMessageBox.warning(self, "Erro", f"Erro ao fazer login: {e}")
-
+            return False
+    
+    def clear_fields(self):
+        self.username_entry.clear()
+        self.password_entry.clear()
 
 if __name__ == "__main__":
     import sys

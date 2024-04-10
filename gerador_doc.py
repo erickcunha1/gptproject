@@ -8,6 +8,7 @@ from prompts import PromptsInfo
 from database import mysql_connection
 from PyQt5.QtWidgets import QWidget, QMessageBox
 
+
 class GeradorDocumentos(QWidget):
     def __init__(self, host, user, passwd, database=None):
         super().__init__()

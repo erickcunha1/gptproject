@@ -16,17 +16,19 @@ def execute(host, user, passwd, database):
     # Executar o diálogo de login
     result = login_dialog.exec_()
     if result == login_dialog.Accepted:
-        login_dialog.login()
-        window = InterfaceGrafica(*dados_sql)
-        window.setGeometry(100, 100, 800, 400)
-        window.show()
-        sys.exit(app.exec_())
+        if login_dialog.login():
+            window = InterfaceGrafica(*dados_sql)
+            window.setGeometry(100, 100, 800, 400)
+            window.show()
+            sys.exit(app.exec_())
+        else:
+            # Se o login falhar devido a nome de usuário ou senha incorretos
+            QMessageBox.critical(None, 'Autenticação falhou.', 'Usuário ou senha inválido.')
+            sys.exit()
     elif result == login_dialog.Rejected:
         # Se o usuário cancelou o login, mostrar o diálogo de registro
         register_dialog.exec_()
         sys.exit()
-    else: 
-        QMessageBox.critical(None, 'Autenticação falhou.', 'Usuário ou senha inválido.')
 
 if __name__ == "__main__":
     execute('localhost', 'root', 'Erick1@3$55', 'gdl')
