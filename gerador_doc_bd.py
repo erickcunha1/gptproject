@@ -156,7 +156,7 @@ class InterfaceGrafica(QMainWindow):
                     if record[1] == item_selecionado:
                             prompt_valor = record[n]  # Obtem o valor do prompt
                             print(prompt_valor)
-                            client = openai.OpenAI(api_key='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')
+                            client = openai.OpenAI(api_key=os.environ.get('KEY'))
 
                             response = client.chat.completions.create(
                                 model="gpt-4-turbo-2024-04-09",
