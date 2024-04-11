@@ -50,8 +50,21 @@ class RegisterDialog(QDialog):
             QMessageBox.warning(self, "Erro", "Todos os campos são obrigatórios.")
             return
 
-        hashed_password = self.hash_password(password)
+        # Verifica se o usuário já existe
+        try:
+            with self.conexao.cursor() as cursor:
+                query = "SELECT * FROM users WHERE username = %s"
+                cursor.execute(query, (username,))
+                result = cursor.fetchone()
+                if result:
+                    QMessageBox.warning(self, "Erro", "Usuário já existe.")
+                    return
+        except Exception as e:
+            QMessageBox.warning(self, "Erro", f"Erro ao verificar usuário: {e}")
+            return
 
+        # Se o usuário não existir, continua com o registro
+        hashed_password = self.hash_password(password)
         try:
             with self.conexao.cursor() as cursor:
                 query = "INSERT INTO users (username, password, email) VALUES (%s, %s, %s)"
