@@ -1,8 +1,9 @@
-from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QFormLayout, QDialogButtonBox, QPushButton, QLabel, QApplication, QMessageBox
+from PyQt5.QtWidgets import QDialog, QLineEdit, QVBoxLayout, QFormLayout, QDialogButtonBox, QPushButton, QMessageBox, QApplication
 from PyQt5.QtCore import Qt
 import mysql.connector
 from Interface_registro import RegisterDialog
 from database import mysql_connection
+import bcrypt
 
 
 class LoginDialog(QDialog):
@@ -12,7 +13,6 @@ class LoginDialog(QDialog):
         self.user = user
         self.passwd = passwd
         self.database = database
-
         self.conexao = mysql_connection(host, user, passwd, database)
         self.cursor = self.conexao.cursor()
 
@@ -34,9 +34,7 @@ class LoginDialog(QDialog):
         register_button = QPushButton("Registrar")
         register_button.clicked.connect(self.open_register_dialog)
 
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.Ok | QDialogButtonBox.Cancel,
-            Qt.Horizontal, self)
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal, self)
         buttons.accepted.connect(self.login)
         buttons.rejected.connect(self.reject)
 
@@ -47,45 +45,43 @@ class LoginDialog(QDialog):
         self.setLayout(layout)
 
     def open_register_dialog(self):
-        register_dialog = RegisterDialog(
-            self.host,
-            self.user,
-            self.passwd, 
-            self.database
-        )
-
+        register_dialog = RegisterDialog(self.host, self.user, self.passwd, self.database)
         register_dialog.exec_()
 
     def login(self):
-        username = self.username_entry.text()
-        password = self.password_entry.text()
+        username = self.username_entry.text().strip()
+        password = self.password_entry.text().strip()
+
         if not username or not password:
             QMessageBox.warning(self, "Erro", "Por favor, preencha todos os campos.")
-            return False
+            return
 
         try:
-            query = "SELECT * FROM users WHERE username = %s AND password = %s"
-            self.cursor.execute(query, (username, password))
-            account = self.cursor.fetchone()
-            if account:
-                self.accept()
-                return True
-            else:
-                QMessageBox.warning(self, "Erro", "Usuário ou senha incorretos.")
-                self.clear_fields()  # Limpa os campos de entrada
-                return False
+            with self.conexao.cursor() as cursor:
+                query = "SELECT password FROM users WHERE username = %s"
+                cursor.execute(query, (username,))
+                result = cursor.fetchone()
+                if result:
+                    stored_password = result[0].encode('utf-8')
+                    if bcrypt.checkpw(password.encode('utf-8'), stored_password):
+                        QMessageBox.information(self, "Login", "Login bem-sucedido.")
+                        self.accept()
+                    else:
+                        QMessageBox.warning(self, "Erro", "Usuário ou senha incorretos.")
+                else:
+                    QMessageBox.warning(self, "Erro", "Usuário ou senha incorretos.")
+                    self.clear_fields()
         except mysql.connector.Error as e:
-            QMessageBox.warning(self, "Erro", f"Erro ao fazer login: {e}")
-            return False
-    
+            QMessageBox.warning(self, "Erro", f"Erro ao acessar o banco de dados: {e}")
+
     def clear_fields(self):
-        self.username_entry.clear()
+        # self.username_entry.clear()
         self.password_entry.clear()
 
 if __name__ == "__main__":
     import sys
 
     app = QApplication(sys.argv)
-    dialog = LoginDialog()
+    dialog = LoginDialog('host', 'user', 'password', 'db')
     dialog.show()
     sys.exit(app.exec_())

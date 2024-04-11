@@ -43,7 +43,7 @@ class InterfaceGrafica(QMainWindow):
 
         self.mostrar_dados_button2 = QPushButton("Gerar Termo de Referência - TR", self)
         self.mostrar_dados_button2.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button2.clicked.connect(self.gerar_documento_tr)
+        self.mostrar_dados_button2.clicked.connect(self.gerar_documentos_tr)
 
         layout.addWidget(self.label)
         layout.addWidget(self.button)
@@ -65,7 +65,21 @@ class InterfaceGrafica(QMainWindow):
         self.gerador_documentos = GeradorDocumentos(host, user, passwd, database)  # Instanciando GeradorDocumentos
 
     def filtrar_itens(self):
-        self.gerador_documentos.filtrar_itens()
+        filtro = self.search_entry.text().strip().lower()
+        comando_sql = f"SELECT * FROM item WHERE LOWER(descricao_item) LIKE '%{filtro}%' order by descricao_item"
+        self.cursor.execute(comando_sql)
+
+        dados_lidos = self.cursor.fetchall()
+        itens_filtrados = [item[1] for item in dados_lidos]
+        itens_selecionados = [item.text() for item in self.item_list.selectedItems()]
+
+        self.item_list.clear()
+        self.item_list.addItems(itens_filtrados)
+
+        for index in range(self.item_list.count()):
+            item = self.item_list.item(index)
+            if item.text() in itens_selecionados:
+                item.setSelected(True)
 
     def gerar_documento_etp(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
@@ -75,12 +89,16 @@ class InterfaceGrafica(QMainWindow):
             QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
 
 
-    def gerar_documento_tr(self):
-        self.gerador_documentos.gerar_documento_tr()
+    def gerar_documentos_tr(self):
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        if selected_items:
+            self.gerador_documentos.gerar_documentos_tr(selected_items)
+        else:
+            QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
 
     def abrir_arquivo(self):
         try:
-            self.cursor.execute('SELECT descricao_item FROM item;')
+            self.cursor.execute('SELECT descricao_item FROM item order by descricao_item;')
             itens = self.cursor.fetchall()
             for item in itens:
                 valor = item[0]  # Obter o valor da coluna
@@ -89,9 +107,6 @@ class InterfaceGrafica(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, 'Erro ao abrir arquivo', f'Ocorreu um erro ao abrir o arquivo: {str(e)}')
 
-    def filtrar_itens(self):
-        pass
-   
     @pyqtSlot()
     def atualizar_dados_selecionados(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
