@@ -1,19 +1,13 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox, QWidget, QFileDialog, QListWidget
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtWidgets import QMainWindow, QMessageBox
 import openai
 from docx import Document
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
 import os
-from interface_login import LoginDialog
-from PyQt5.QtWidgets import QProgressBar
 import mysql.connector
 from mysql.connector import Error
 from prompts import PromptsInfo
-from tqdm import tqdm
-import time
+
 
 
 try:
@@ -54,22 +48,12 @@ class InterfaceGrafica(QMainWindow):
 
 
     def filtrar_itens(self):
-
-        if not hasattr(self, 'df_original'):
-                QMessageBox.warning(self, 'Atenção', 'Selecione a planilha primeiro.')
-                return
-
         filtro = self.search_entry.text().strip().lower()
-
-            # Execute a consulta SQL para buscar os dados da tabela "itens"
         cursor = connection.cursor()
         comando_sql = f"SELECT * FROM item WHERE LOWER(descricao_item) LIKE '%{filtro}%' order by descricao_item"
         cursor.execute(comando_sql)
         dados_lidos = cursor.fetchall()
-
-        # Atualize a lista de itens filtrados
         itens_filtrados = [item[1] for item in dados_lidos]  # Assumindo que a descrição está na segunda coluna
-
         itens_selecionados = [item.text() for item in self.item_list.selectedItems()]
 
         self.item_list.clear()

@@ -4,7 +4,8 @@ import mysql.connector
 from Interface_registro import RegisterDialog
 from database import mysql_connection
 import bcrypt
-
+from datetime import datetime
+import requests
 
 class LoginDialog(QDialog):
     def __init__(self, host, user, passwd, database):
@@ -49,6 +50,36 @@ class LoginDialog(QDialog):
         register_dialog = RegisterDialog(self.host, self.user, self.passwd, self.database)
         register_dialog.exec_()
 
+    def get_public_ip_address(self):
+        try:
+            response = requests.get("https://api.ipify.org?format=json")
+            if response.status_code == 200:
+                ip_address = response.json()["ip"]
+                return ip_address
+            return "Desconhecido"
+        except:
+            ...
+
+    def registrar_log(self, username):
+        # Registro do log de login bem-sucedido
+        data_hora_atual = datetime.now()
+        ip_address = self.get_public_ip_address()
+        # acao = "Login bem-sucedido"
+
+        with self.conexao.cursor() as cursor:
+            log_query = """
+                INSERT INTO LoginLog (username, data, hora, ip_address)
+                VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(log_query, (
+            username,
+            data_hora_atual.date(),
+            data_hora_atual.time(),
+            ip_address,
+            ))
+            self.conexao.commit()
+
+
     def login(self):
         username = self.username_entry.text().strip()
         password = self.password_entry.text().strip()
@@ -66,6 +97,7 @@ class LoginDialog(QDialog):
                     stored_password = result[0].encode('utf-8')
                     if bcrypt.checkpw(password.encode('utf-8'), stored_password):
                         QMessageBox.information(self, "Login", "Login bem-sucedido.")
+                        self.registrar_log(username)
                         self.accept()
                     else:
                         QMessageBox.warning(self, "Erro", "Usuário ou senha incorretos.")
@@ -76,7 +108,6 @@ class LoginDialog(QDialog):
             QMessageBox.warning(self, "Erro", f"Erro ao acessar o banco de dados: {e}")
 
     def clear_fields(self):
-        # self.username_entry.clear()
         self.password_entry.clear()
 
 if __name__ == "__main__":
