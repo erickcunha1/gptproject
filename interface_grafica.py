@@ -10,6 +10,7 @@ class InterfaceGrafica(QMainWindow):
         super().__init__()
         self.conexao = mysql_connection(host, user, passwd, database)
         self.cursor = self.conexao.cursor()
+        self.bd_open = False
         
         self.setWindowTitle("Gerador de Documentos Licitatórios")
         central_widget = QWidget(self)
@@ -97,15 +98,17 @@ class InterfaceGrafica(QMainWindow):
             QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
 
     def abrir_arquivo(self):
-        try:
-            self.cursor.execute('SELECT descricao_item FROM item order by descricao_item;')
-            itens = self.cursor.fetchall()
-            for item in itens:
-                valor = item[0]  # Obter o valor da coluna
-                valor_sem_parenteses = valor.strip('()')  # Remover os parênteses
-                self.item_list.addItem(valor_sem_parenteses)  # Adicionar o valor à lista na interface gráfica
-        except Exception as e:
-            QMessageBox.warning(self, 'Erro ao abrir arquivo', f'Ocorreu um erro ao abrir o arquivo: {str(e)}')
+        if not self.bd_open:
+            try:
+                self.cursor.execute('SELECT descricao_item FROM item order by descricao_item;')
+                itens = self.cursor.fetchall()
+                for item in itens:
+                    valor = item[0]  # Obter o valor da coluna
+                    valor_sem_parenteses = valor.strip('()')  # Remover os parênteses
+                    self.item_list.addItem(valor_sem_parenteses)
+                    self.bd_open = True  # Adicionar o valor à lista na interface gráfica
+            except Exception as e:
+                QMessageBox.warning(self, 'Erro ao abrir arquivo', f'Ocorreu um erro ao abrir o arquivo: {str(e)}')
 
     @pyqtSlot()
     def atualizar_dados_selecionados(self):

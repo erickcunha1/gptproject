@@ -14,8 +14,9 @@ class LoginDialog(QDialog):
         self.passwd = passwd
         self.database = database
         self.conexao = mysql_connection(host, user, passwd, database)
-        self.cursor = self.conexao.cursor()
+        self.setupUI()
 
+    def setupUI(self):
         self.setWindowTitle("Login")
         self.setGeometry(300, 300, 300, 150)
 

@@ -1,10 +1,5 @@
-from database import mysql_connection
-
 class PromptsInfo:
-    def __init__(self, host, user, passwd, database=None) -> None:
-        self.connection = mysql_connection(host, user, passwd, database)
-        self.cursor = self.connection.cursor()
-
+    
     PROMPT_TR_TITLES = {
         1: 'Termo de Referência',
         2: 'TR-Fundamentação da Contratação',
