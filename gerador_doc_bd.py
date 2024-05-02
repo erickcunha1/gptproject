@@ -95,7 +95,7 @@ class InterfaceGrafica(QMainWindow):
                    
                     if record[1] == item_selecionado:
                             prompt_valor = record[n]  # Obtem o va
-                            client = openai.OpenAI(api_key='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')
+                            client = openai.OpenAI(api_key='')
                             response = client.chat.completions.create(
                                 model="gpt-4-turbo-2024-04-09",
                                 messages=[{"role": "user", "content": prompt_valor}])

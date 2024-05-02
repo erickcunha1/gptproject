@@ -1,11 +1,6 @@
 import sys
 from cx_Freeze import setup, Executable
 
-# Arquivo .env para incluir no build
-# include_files = [
-#     ".env",  # Ajuste o caminho conforme necessário
-# ]
-
 # Definindo o script principal
 executables = [Executable("main.py", base="Win32GUI" if sys.platform == "win32" else None)]
 
@@ -18,13 +13,13 @@ packages = [
     "mysql.connector",
     "docx",
     "datetime",
+    "requests",
 ]
 
 # Incluindo todos os módulos utilizados no projeto e o arquivo .env
 options = {
     'build_exe': {
         'packages': packages,
-        # 'include_files': include_files,  # Adiciona arquivos estáticos ao build
         'excludes': ['tkinter'],  # Exemplo de exclusão, se necessário
     },
 }
