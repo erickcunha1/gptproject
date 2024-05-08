@@ -14,7 +14,7 @@ import pandas as pd
 from pathlib import Path
 
 # Carrega os dados do Excel
-excel_file = Path.home() / "Desktop" / "item-import3.xlsx"
+excel_file = Path.home() / "Desktop" / "item-importar2.xlsx"
 
 # Tenta evitar NaN ao ler o arquivo
 df = pd.read_excel(excel_file, na_filter=False)
@@ -37,11 +37,13 @@ for index, row in df.iterrows():
     if cod_item == "" or isinstance(cod_item, float) and math.isnan(cod_item):
         print(f"Valor 'cod_item' inválido: {cod_item}, linha {index}, ignorado")
         continue  # Pule esta linha e continue com as demais
-
-    # Inserção no banco de dados
-    sql = f"INSERT INTO {tabela_mysql} (cod_item, descricao_item) VALUES (%s, %s)"
-    values = (cod_item, descricao_item)
-    cursor.execute(sql, values)
+    try:
+        # Inserção no banco de dados
+        sql = f"INSERT INTO {tabela_mysql} (cod_item, descricao_item) VALUES (%s, %s)"
+        values = (cod_item, descricao_item)
+        cursor.execute(sql, values)
+    except:
+        continue
 
 # Commit das alterações e fechamento da conexão
 db.commit()

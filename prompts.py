@@ -1,17 +1,31 @@
 class PromptsInfo:
     
     PROMPT_TR_TITLES = {
-        1: 'Termo de Referência',
-        2: 'TR-Fundamentação da Contratação',
-        3: 'TR- Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto',
-        4: 'TR- Requisitos da Contratação'
+        1:  "descricao_objeto_tr",
+        2:  "descricao_fundamentacao_contratacao",
+        3:  "descricao_solucao",
+        4:  "requisitos_contratacao",
+        5:  "requisitos_contratacao",
+        6:  "modelo_execucao_objeto",
+        7:  "modelo_gestao_contrato",
+        8:  "criterios_medicao_pagamento",
+        9:  "criterios_selecao_fornecedor",
+        10: "estimativas_valor",
+        11: "adequacao_orcamentaria",
     }
 
     TITULO_TR_TITLES = {
-        1: "Condições Gerais da Contratação",
-        2: "Fundamentação da Contratação",
-        3: "Descrição da solução como um todo considerado o ciclo de vida do objeto e especificação do produto",
-        4: "Requisitos da Contratação"
+        1:  "Descrição do Objeto",
+        2:  "Justificativa para Contratação",
+        3:  "Solução Proposta",
+        4:  "Requisitos da Contratação",
+        5:  "Requisitos para Contratação",
+        6:  "Modelo de Execução do Objeto",
+        7:  "Modelo de Gestão do Contrato",
+        8:  "Critérios de Medição e Pagamento",
+        9:  "Critérios para Seleção de Fornecedores",
+        10: "Estimativas de Custos",
+        11: "Adequação Orçamentária",
     }
 
     PROMPT_NAMES = {

@@ -89,7 +89,6 @@ class InterfaceGrafica(QMainWindow):
         else:
             QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
 
-
     def gerar_documentos_tr(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         if selected_items:
@@ -104,8 +103,7 @@ class InterfaceGrafica(QMainWindow):
                 itens = self.cursor.fetchall()
                 for item in itens:
                     valor = item[0]  # Obter o valor da coluna
-                    valor_sem_parenteses = valor.strip('()')  # Remover os parênteses
-                    self.item_list.addItem(valor_sem_parenteses)
+                    self.item_list.addItem(valor)
                     self.bd_open = True  # Adicionar o valor à lista na interface gráfica
             except Exception as e:
                 QMessageBox.warning(self, 'Erro ao abrir arquivo', f'Ocorreu um erro ao abrir o arquivo: {str(e)}')
