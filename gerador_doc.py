@@ -3,7 +3,6 @@ import openai
 from docx import Document
 from datetime import datetime
 from pathlib import Path
-import os
 from prompts import PromptsInfo
 from database import mysql_connection
 from PyQt5.QtWidgets import QWidget
@@ -28,6 +27,12 @@ class GeradorDocumentos(QWidget):
         doc.save(caminho_arquivo)
         QMessageBox.information(self, 'Documentos gerados!', f'Documento salvo com sucesso em: {caminho_arquivo}')
 
+    def get_item_code(self, desc):
+        first_query = "SELECT cod_item FROM item WHERE descricao_item = %s"
+        self.cursor.execute(first_query, (desc,))
+        result = self.cursor.fetchone() 
+        return result[0]
+    
     def gerar_documento_etp(self, selected):
         try:
             doc = Document()
@@ -35,9 +40,10 @@ class GeradorDocumentos(QWidget):
             for i in range(1, 9):
                 titulo = PromptsInfo.get_titulo_name(i)
                 doc.add_heading(titulo, level=1)
-                for _ in selected:
+                for item in selected:
                     prompt_nome = PromptsInfo.get_prompt_name(i)
-                    self.cursor.execute(f"SELECT {prompt_nome} FROM prompt_etp;")
+                    cod_item = self.get_item_code(item)
+                    self.cursor.execute(f"SELECT {prompt_nome} FROM prompt_etp WHERE cod_item = '{cod_item}';")
                     prompt_valor = self.cursor.fetchone()[0]
                     resposta = self.generate_response(prompt_valor)
                     doc.add_paragraph(resposta)

@@ -22,7 +22,7 @@ class PromptsInfo:
         5: "prompt_estimativa_valor",
         6: "prompt_fundamentacao_legal",
         7: "prompt_justificativa_parcelamento",
-        8: "prompt_pocicionamento_conclusivo",
+        8: "prompt_posicionamento_conclusivo",
     }
 
     TITULO_NAMES = {

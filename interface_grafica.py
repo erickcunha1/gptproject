@@ -120,20 +120,4 @@ class InterfaceGrafica(QMainWindow):
             last_item = self.item_list.selectedItems()[-1]
             last_item.setSelected(False)
             QMessageBox.warning(self, 'Atenção', 'Limite de 30 itens selecionados alcançado.')
-
-        try:
-            for item_selecionado in selected_items:
-                self.cursor.execute(f"SELECT * FROM prompt_etp WHERE cod_item = '{item_selecionado}'")
-                prompts = self.cursor.fetchall()
-                prompts_list = []
-                for prompt in prompts:
-                    prompt_dict = {
-                        'cod_item': prompt[0],  # Código do item
-                        'descricao_item': prompt[1],  # Descrição do item
-                        'prompt1': prompt[2],  # Prompt 1
-                        'prompt2': prompt[3],  # Prompt 2
-                        'prompt3': prompt[4],  # Prompt 3
-                    }
-                    prompts_list.append(prompt_dict)
-        except Exception as e:
-            QMessageBox.warning(self, 'Erro ao recuperar prompts', f'Ocorreu um erro ao recuperar prompts do banco de dados: {str(e)}')
+                

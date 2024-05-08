@@ -4,6 +4,7 @@ from interface_login import LoginDialog
 from interface_grafica import InterfaceGrafica
 from Interface_registro import RegisterDialog
 
+
 def execute(host, user, passwd, database):
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
