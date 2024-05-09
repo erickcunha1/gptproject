@@ -1,11 +1,12 @@
 from PyQt5.QtWidgets import QMessageBox
-import openai
 from docx import Document
 from datetime import datetime
 from pathlib import Path
 from prompts import PromptsInfo
 from database import mysql_connection
 from PyQt5.QtWidgets import QWidget
+import openai
+
 
 class GeradorDocumentos(QWidget):
     def __init__(self, host, user, passwd, database=None):
@@ -39,7 +40,6 @@ class GeradorDocumentos(QWidget):
             doc.add_heading("Documentos Gerados", level=1)
 
             for i in range(1, 9):
-                print('1 - CHEGOU AQUI')
                 titulo = PromptsInfo.get_titulo_name(i)
                 doc.add_heading(titulo, level=1)
 
@@ -66,9 +66,10 @@ class GeradorDocumentos(QWidget):
                 doc.add_heading(text=titulo, level=1)
 
                 for item in selected:
-                    prompt_nome = PromptsInfo.get_titulo_tr(i)
+                    prompt_nome = PromptsInfo.get_prompt_tr(i)
                     cod_item = self.get_item_code(item)
-                    self.cursor.execute(f"SELECT {prompt_nome} FROM prompt_tr WHERE cod_item = '{cod_item}';")
+                    query = f"SELECT {prompt_nome} FROM prompt_tr WHERE cod_item = %s;"
+                    self.cursor.execute(query, (cod_item,))
                     prompt_valor = self.cursor.fetchone()[0]
                     resposta = self.generate_response(prompt_valor)
                     doc.add_paragraph(resposta)

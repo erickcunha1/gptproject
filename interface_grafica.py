@@ -3,15 +3,34 @@ from PyQt5.QtWidgets import QProgressBar, QMainWindow, QLabel, QLineEdit, QPushB
 from gerador_doc import GeradorDocumentos
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QObject
+import time
+from PyQt5.QtWidgets import QProgressBar,QVBoxLayout, QLabel
 
+
+class BackgroundWorkThread(QThread):
+    finished = pyqtSignal()
+    update_progress = pyqtSignal(int)  # Sinal para atualizar a barra de progresso
+
+    def run(self):
+        # Atualiza a barra de progresso com valores de 0 a 100
+        for i in range(101):
+            time.sleep(0.05)
+            self.update_progress.emit(i)
 
 class InterfaceGrafica(QMainWindow):
     def __init__(self, host, user, passwd, database):
         super().__init__()
+        self.host = host
+        self.user = user
+        self.passwd = passwd
+        self.database = database
         self.conexao = mysql_connection(host, user, passwd, database)
         self.cursor = self.conexao.cursor()
         self.bd_open = False
-        
+        self.setupUI()
+    
+    def setupUI(self):
         self.setWindowTitle("Gerador de Documentos Licitatórios")
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -46,6 +65,14 @@ class InterfaceGrafica(QMainWindow):
         self.mostrar_dados_button2.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
         self.mostrar_dados_button2.clicked.connect(self.gerar_documentos_tr)
 
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(100)
+
+        self.reset_timer = QTimer()
+        self.reset_timer.setSingleShot(True)
+        self.reset_timer.timeout.connect(self.reset_progress_bar)
+
         layout.addWidget(self.label)
         layout.addWidget(self.button)
         layout.addWidget(self.output_label)
@@ -53,18 +80,39 @@ class InterfaceGrafica(QMainWindow):
         layout.addWidget(self.item_list)
         layout.addWidget(self.mostrar_dados_button)
         layout.addWidget(self.mostrar_dados_button2)
-
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.setStyleSheet("font-size: 12px;")
-        self.progress_bar.setMaximum(30)
-        self.progress_bar.setValue(0)
-
         layout.addWidget(self.progress_bar)
 
         central_widget.setLayout(layout)
 
-        self.gerador_documentos = GeradorDocumentos(host, user, passwd, database)  # Instanciando GeradorDocumentos
+        self.gerador_documentos = GeradorDocumentos(self.host, self.user, self.passwd, self.database)  # Instanciando GeradorDocumentos
+    
+    def reset_progress_bar(self):
+        self.progress_bar.setValue(0)
 
+    def iniciar_processo(self):
+        # Criação da thread para atualizar a barra de progresso
+        self.progress_thread = BackgroundWorkThread()
+        self.progress_thread.update_progress.connect(self.progress_bar.setValue)  # Conecta o sinal à barra de progresso
+        self.progress_thread.start()  # Inicia a thread
+
+    def gerar_documento_etp(self):
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        self.iniciar_processo()
+        if selected_items:
+            self.gerador_documentos.gerar_documento_etp(selected_items)
+            self.reset_timer.start(5000)
+        else:
+            QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
+
+    def gerar_documentos_tr(self):
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        self.iniciar_processo()
+        if selected_items:
+            self.gerador_documentos.gerar_documentos_tr(selected_items)
+            self.reset_timer.start(5000)
+        else:
+            QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
+    
     def filtrar_itens(self):
         filtro = self.search_entry.text().strip().lower()
         comando_sql = f"SELECT * FROM item WHERE LOWER(descricao_item) LIKE '%{filtro}%' order by descricao_item"
@@ -82,20 +130,6 @@ class InterfaceGrafica(QMainWindow):
             if item.text() in itens_selecionados:
                 item.setSelected(True)
 
-    def gerar_documento_etp(self):
-        selected_items = [item.text() for item in self.item_list.selectedItems()]
-        if selected_items:
-            self.gerador_documentos.gerar_documento_etp(selected_items)
-        else:
-            QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
-
-    def gerar_documentos_tr(self):
-        selected_items = [item.text() for item in self.item_list.selectedItems()]
-        if selected_items:
-            self.gerador_documentos.gerar_documentos_tr(selected_items)
-        else:
-            QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
-
     def abrir_arquivo(self):
         if not self.bd_open:
             try:
@@ -112,7 +146,7 @@ class InterfaceGrafica(QMainWindow):
     def atualizar_dados_selecionados(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         print("Itens selecionados:", selected_items)
-        self.progress_bar.setValue(len(selected_items))
+        # self.progress_bar.setValue(len(selected_items))
         if len(selected_items) > 30:
             # Se o limite de 30 itens for ultrapassado, desmarcar o último item selecionado
             last_item = self.item_list.selectedItems()[-1]

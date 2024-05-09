@@ -9,8 +9,8 @@ import MySQLdb
 # Configurações do banco de dados
 DB_HOST = "localhost"
 DB_USER = "root"
-DB_PASSWORD = "root@2024"
-DB_DATABASE = "BD_gdl"
+DB_PASSWORD = "Erick1@3$55"
+DB_DATABASE = "gdl"
 
 # Carrega os dados do Excel em um DataFrame
 excel_file = Path.home() / "Desktop" / f"importar TR - novo.xlsx"
