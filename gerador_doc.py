@@ -26,7 +26,7 @@ class GeradorDocumentos(QWidget):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         caminho_arquivo = Path.home() / "Desktop" / f"Documentos_Gerados_{timestamp}.docx"
         doc.save(caminho_arquivo)
-        QMessageBox.information(self, 'Documentos gerados!', f'Documento salvo com sucesso em: {caminho_arquivo}')
+        # QMessageBox.information(self, 'Documentos gerados!', f'Documento salvo com sucesso em: {caminho_arquivo}')
 
     def get_item_code(self, desc):
         first_query = "SELECT cod_item FROM item WHERE descricao_item = %s"
@@ -47,6 +47,7 @@ class GeradorDocumentos(QWidget):
                     prompt_nome = PromptsInfo.get_prompt_name(i)
                     cod_item = self.get_item_code(item_description)
                     query = f"SELECT {prompt_nome} FROM prompt_etp WHERE cod_item = %s;"
+                    print(query)
                     self.cursor.execute(query, (cod_item,))
                     prompt_valor = self.cursor.fetchone()[0]
                     resposta = self.generate_response(prompt_valor)

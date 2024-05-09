@@ -1,22 +1,56 @@
-from database import mysql_connection
-from PyQt5.QtWidgets import QProgressBar, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget, QListWidget
-from gerador_doc import GeradorDocumentos
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer, QObject
 import time
-from PyQt5.QtWidgets import QProgressBar,QVBoxLayout, QLabel
+
+from PyQt5.QtWidgets import (
+    QProgressBar,
+    QMainWindow,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+    QListWidget,
+    QMessageBox,
+)
+from PyQt5.QtCore import (
+    QThread,
+    pyqtSignal,
+    pyqtSlot,
+    QTimer,
+)
+
+from database import mysql_connection
+from gerador_doc import GeradorDocumentos
 
 
 class BackgroundWorkThread(QThread):
-    finished = pyqtSignal()
     update_progress = pyqtSignal(int)  # Sinal para atualizar a barra de progresso
+    task_finished = pyqtSignal()  # Sinal para indicar que a tarefa foi concluída
+    
+    def __init__(self, work_function=None, items=None):
+        super().__init__()
+        self.work_function = work_function
+        self.items = items
+        self.tempo = len(self.items) * 60
+        self.fifth = self.tempo // 2
+
 
     def run(self):
-        # Atualiza a barra de progresso com valores de 0 a 100
-        for i in range(101):
-            time.sleep(0.05)
-            self.update_progress.emit(i)
+        
+        for per in range(self.fifth):
+            time.sleep(1)
+            self.update_progress.emit(per)
+            if per == self.fifth:
+                break
+        
+        self.work_function(self.items)
+
+        for per in range(self.fifth):
+            time.sleep(1)
+            self.update_progress.emit(per)
+            if per == self.fifth:
+                break
+
+        self.task_finished.emit()
 
 class InterfaceGrafica(QMainWindow):
     def __init__(self, host, user, passwd, database):
@@ -29,6 +63,29 @@ class InterfaceGrafica(QMainWindow):
         self.cursor = self.conexao.cursor()
         self.bd_open = False
         self.setupUI()
+
+    def iniciar_processo(self):
+        # Iniciar a thread para rodar em segundo plano
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        if not selected_items:
+            QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
+            return
+
+        # Criar uma nova thread para o trabalho em segundo plano
+        self.background_thread = BackgroundWorkThread(work_function=self.gerar_documento_etp, items=selected_items)
+        self.background_thread.start()
+        
+        # Conectar sinais para atualizar a barra de progresso e notificar quando a tarefa for concluída
+        self.background_thread.update_progress.connect(self.progress_bar.setValue)
+
+        self.background_thread.task_finished.connect(self.on_task_finished)
+
+        # Iniciar a thread
+    
+    @pyqtSlot()
+    def on_task_finished(self):
+        QMessageBox.information(self, "Concluído", "Documento gerado com sucesso!")
+        self.progress_bar.setValue(0)
     
     def setupUI(self):
         self.setWindowTitle("Gerador de Documentos Licitatórios")
@@ -59,7 +116,7 @@ class InterfaceGrafica(QMainWindow):
 
         self.mostrar_dados_button = QPushButton("Gerar Estudo Técnico Preliminar - ETP", self)
         self.mostrar_dados_button.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button.clicked.connect(self.gerar_documento_etp)
+        self.mostrar_dados_button.clicked.connect(self.iniciar_processo)
 
         self.mostrar_dados_button2 = QPushButton("Gerar Termo de Referência - TR", self)
         self.mostrar_dados_button2.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
@@ -89,21 +146,15 @@ class InterfaceGrafica(QMainWindow):
     def reset_progress_bar(self):
         self.progress_bar.setValue(0)
 
-    def iniciar_processo(self):
-        # Criação da thread para atualizar a barra de progresso
-        self.progress_thread = BackgroundWorkThread()
-        self.progress_thread.update_progress.connect(self.progress_bar.setValue)  # Conecta o sinal à barra de progresso
-        self.progress_thread.start()  # Inicia a thread
+    # def iniciar_processo(self):
+    #     # Criação da thread para atualizar a barra de progresso
+    #     self.progress_thread = BackgroundWorkThread()
+    #     self.progress_thread.update_progress.connect(self.progress_bar.setValue)  # Conecta o sinal à barra de progresso
+    #     self.progress_thread.start()  # Inicia a thread
 
-    def gerar_documento_etp(self):
-        selected_items = [item.text() for item in self.item_list.selectedItems()]
-        self.iniciar_processo()
-        if selected_items:
-            self.gerador_documentos.gerar_documento_etp(selected_items)
-            self.reset_timer.start(5000)
-        else:
-            QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
-
+    def gerar_documento_etp(self, itens):
+        self.gerador_documentos.gerar_documento_etp(itens)
+        
     def gerar_documentos_tr(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         self.iniciar_processo()
@@ -151,5 +202,4 @@ class InterfaceGrafica(QMainWindow):
             # Se o limite de 30 itens for ultrapassado, desmarcar o último item selecionado
             last_item = self.item_list.selectedItems()[-1]
             last_item.setSelected(False)
-            QMessageBox.warning(self, 'Atenção', 'Limite de 30 itens selecionados alcançado.')
-                
+            QMessageBox.warning(self, 'Atenção', 'Limite de 30 itens selecionados alcançado.') 
