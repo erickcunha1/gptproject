@@ -21,36 +21,34 @@ from PyQt5.QtCore import (
 from database import mysql_connection
 from gerador_doc import GeradorDocumentos
 
-
 class BackgroundWorkThread(QThread):
-    update_progress = pyqtSignal(int)  # Sinal para atualizar a barra de progresso
-    task_finished = pyqtSignal()  # Sinal para indicar que a tarefa foi concluída
+    # Sinais para indicar progresso e conclusão do trabalho
+    task_finished = pyqtSignal()
+  # Sinal para indicar que a tarefa foi concluída
     
     def __init__(self, work_function=None, items=None):
         super().__init__()
         self.work_function = work_function
         self.items = items
-        self.tempo = len(self.items) * 60
-        self.fifth = self.tempo // 2
-
 
     def run(self):
-        
-        for per in range(self.fifth):
-            time.sleep(1)
-            self.update_progress.emit(per)
-            if per == self.fifth:
-                break
-        
         self.work_function(self.items)
-
-        for per in range(self.fifth):
-            time.sleep(1)
-            self.update_progress.emit(per)
-            if per == self.fifth:
-                break
-
         self.task_finished.emit()
+
+class ProgressBar(QThread):
+    update_progress = pyqtSignal(int)  # Sinal para atualizar a barra de progresso
+    # task_finished = pyqtSignal()  # Sinal para indicar que a barra de progresso terminou
+    
+    def __init__(self, total_time):
+        super().__init__()
+        self.total_time = total_time
+
+    def run(self):
+        # Atualiza a barra de progresso conforme o tempo passa
+        for t in range(1, self.total_time + 1):
+            time.sleep(1.5)  # Simula tempo de trabalho
+            self.update_progress.emit(int((t / self.total_time) * 100))  # Atualiza a barra de progresso
+          # Sinaliza quando a barra chega ao fim
 
 class InterfaceGrafica(QMainWindow):
     def __init__(self, host, user, passwd, database):
@@ -65,22 +63,29 @@ class InterfaceGrafica(QMainWindow):
         self.setupUI()
 
     def iniciar_processo(self):
-        # Iniciar a thread para rodar em segundo plano
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         if not selected_items:
             QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
             return
-
-        # Criar uma nova thread para o trabalho em segundo plano
-        self.background_thread = BackgroundWorkThread(work_function=self.gerar_documento_etp, items=selected_items)
-        self.background_thread.start()
         
-        # Conectar sinais para atualizar a barra de progresso e notificar quando a tarefa for concluída
-        self.background_thread.update_progress.connect(self.progress_bar.setValue)
+        # Criar e iniciar a thread de trabalho
+        self.background_thread = BackgroundWorkThread(
+            work_function=self.gerar_documento_etp,
+            items=selected_items
+        )
 
+        # Criar e iniciar a thread da barra de progresso
+        total_time = 60  # Duração total do progresso
+        self.progress_thread = ProgressBar(total_time)
+        
+        # Conectar os sinais ao método correspondente
+        self.progress_thread.update_progress.connect(self.progress_bar.setValue)
+        # self.progress_thread.task_finished.connect(self.on_task_finished)
         self.background_thread.task_finished.connect(self.on_task_finished)
-
-        # Iniciar a thread
+        
+        # Iniciar ambas as threads
+        self.background_thread.start()
+        self.progress_thread.start()
     
     @pyqtSlot()
     def on_task_finished(self):
@@ -145,12 +150,6 @@ class InterfaceGrafica(QMainWindow):
     
     def reset_progress_bar(self):
         self.progress_bar.setValue(0)
-
-    # def iniciar_processo(self):
-    #     # Criação da thread para atualizar a barra de progresso
-    #     self.progress_thread = BackgroundWorkThread()
-    #     self.progress_thread.update_progress.connect(self.progress_bar.setValue)  # Conecta o sinal à barra de progresso
-    #     self.progress_thread.start()  # Inicia a thread
 
     def gerar_documento_etp(self, itens):
         self.gerador_documentos.gerar_documento_etp(itens)
