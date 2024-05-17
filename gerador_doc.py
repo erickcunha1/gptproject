@@ -13,7 +13,7 @@ class GeradorDocumentos(QWidget):
         super().__init__()
         self.conexao = mysql_connection(host, user, passwd, database)
         self.cursor = self.conexao.cursor(buffered=True)
-        self.client = openai.OpenAI(api_key='sk-proj-x1qfAp6anjtTmTkKSXXFT3BlbkFJg5RE7JTibKMRXUtNDNVd')  # Usar variável de ambiente
+        self.client = openai.OpenAI(api_key='')  # Usar variável de ambiente
 
     def generate_response(self, prompt):
         response = self.client.chat.completions.create(
@@ -56,7 +56,7 @@ class GeradorDocumentos(QWidget):
                     prompt_valor = self.search_etp_data(i, item)
                     resposta = self.generate_response(prompt_valor)
                     doc.add_paragraph(resposta)
-                    
+
             doc_gerado = self.save_document(doc)
             os.system(f"start {doc_gerado}")
         except Exception as e:
