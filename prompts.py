@@ -5,13 +5,12 @@ class PromptsInfo:
         2:  "descricao_fundamentacao_contratacao",
         3:  "descricao_solucao",
         4:  "requisitos_contratacao",
-        5:  "requisitos_contratacao",
-        6:  "modelo_execucao_objeto",
-        7:  "modelo_gestao_contrato",
-        8:  "criterios_medicao_pagamento",
-        9:  "criterios_selecao_fornecedor",
-        10: "estimativas_valor",
-        11: "adequacao_orcamentaria",
+        5:  "modelo_execucao_objeto",
+        6:  "modelo_gestao_contrato",
+        7:  "criterios_medicao_pagamento",
+        8:  "criterios_selecao_fornecedor",
+        9:  "estimativas_valor",
+        10: "adequacao_orcamentaria",
     }
 
     TITULO_TR_TITLES = {
