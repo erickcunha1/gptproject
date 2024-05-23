@@ -39,11 +39,15 @@ class GeradorDocumentos(QWidget):
             titulo = PromptsInfo.get_title_etp(i)
             doc.add_heading(titulo, level=1)
             for item in selected:
-                prompt = self.prompt_manager.search_prompt_etp(i, item)
-                print(prompt)
-                resposta = self.generate_response(prompt)
+                column_name = PromptsInfo.get_column_etp(i)
+                prompt_exists = self.prompt_manager.prompt_exists(item, column_name) # Verifica a existência na tabela ETP
+                if prompt_exists:
+                    resposta = prompt_exists
+                else:
+                    prompt = self.prompt_manager.search_prompt_etp(i, item)
+                    resposta = self.generate_response(prompt)
+                    self.prompt_manager.insert_prompt(PromptsInfo.get_column_etp(i), resposta, item)
                 doc.add_paragraph(resposta)
-                self.prompt_manager.insert_prompt(PromptsInfo.get_column_etp(i), resposta, item)
 
         self.save_document(doc)
         

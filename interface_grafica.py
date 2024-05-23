@@ -1,5 +1,4 @@
 import time
-import os 
 from functools import partial
 
 from PyQt5.QtWidgets import (
