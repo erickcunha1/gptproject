@@ -23,6 +23,7 @@ from PyQt5.QtCore import (
 from database import mysql_connection
 from gerador_doc import GeradorDocumentos
 
+
 class BackgroundWorkThread(QThread):
     # Sinais para indicar progresso e conclusão do trabalho
     task_finished = pyqtSignal()
@@ -35,6 +36,7 @@ class BackgroundWorkThread(QThread):
     def run(self):
         self.work_function(self.items)
         self.task_finished.emit()
+
 
 class ProgressBar(QThread):
     update_progress = pyqtSignal(int)  # Sinal para atualizar a barra de progresso
@@ -52,8 +54,7 @@ class ProgressBar(QThread):
             self.update_progress.emit(progress)  # Atualiza a barra de progresso
             time.sleep(0.5)  # Intervalo de atualização mais frequente para uma barra de progresso mais dinâmica
 
-        # Sinaliza quando a barra chega ao fim
-        # self.update_progress.emit(100)
+
 class InterfaceGrafica(QMainWindow):
     def __init__(self, host: str, user: str, passwd: str, database: str = None) -> None:
         super().__init__()
@@ -159,14 +160,8 @@ class InterfaceGrafica(QMainWindow):
         self.gerador_documentos.gerar_documento_etp(itens)
         
     def gerar_documentos_tr(self, itens) -> None:
-        # selected_items = [item.text() for item in self.item_list.selectedItems()]
-        # self.iniciar_processo()
-        # if selected_items:
         self.gerador_documentos.gerar_documentos_tr(itens)
-            # self.reset_timer.start(5000)
-        # else:
-        #     QMessageBox.warning(self, 'Nenhum item selecionado', 'Selecione pelo menos um item antes de gerar os documentos.')
-    
+  
     def filtrar_itens(self) -> None:
         filtro = self.search_entry.text().strip().lower()
         comando_sql = f"SELECT * FROM item WHERE LOWER(descricao_item) LIKE '%{filtro}%' order by descricao_item"
@@ -201,7 +196,6 @@ class InterfaceGrafica(QMainWindow):
     def atualizar_dados_selecionados(self):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         print("Itens selecionados:", selected_items)
-        # self.progress_bar.setValue(len(selected_items))
         if len(selected_items) > 30:
             # Se o limite de 30 itens for ultrapassado, desmarcar o último item selecionado
             last_item = self.item_list.selectedItems()[-1]

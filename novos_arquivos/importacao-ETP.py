@@ -9,7 +9,7 @@ import MySQLdb
 # Configurações do banco de dados
 DB_HOST = "localhost"
 DB_USER = "root"
-DB_PASSWORD = ""
+DB_PASSWORD = "Erick1@3$55"
 DB_DATABASE = "gdl"
 
 # Carrega os dados do Excel em um DataFrame

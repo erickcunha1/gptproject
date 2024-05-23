@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMessageBox
 from docx import Document
 from datetime import datetime
 from pathlib import Path
-from prompts import PromptsInfo
+from prompt import PromptsInfo
 from database import mysql_connection
 from PyQt5.QtWidgets import QWidget
 import openai
@@ -28,47 +28,73 @@ class GeradorDocumentos(QWidget):
         doc.save(caminho_arquivo)
         return caminho_arquivo
 
-
     def get_item_code(self, desc):
         first_query = "SELECT cod_item FROM item WHERE descricao_item = %s"
         self.cursor.execute(first_query, (desc,))
-        result = self.cursor.fetchone() 
-        return str(result[0])
+        result = self.cursor.fetchone()
+        return result[0]
     
-
-    def search_etp_data(self, i, item):
-        prompt_nome = PromptsInfo.get_prompt_name(i)
+    def search_prompt_etp(self, i, item):
+        column_name = PromptsInfo.get_column_etp(i)
         cod_item = self.get_item_code(item)
-        query = f"SELECT {prompt_nome} FROM prompt_etp WHERE cod_item = %s;"
+        query = f"SELECT {column_name} FROM prompt_etp WHERE cod_item = %s;"
         self.cursor.execute(query, (cod_item,))
-        prompt_valor = self.cursor.fetchone()[0]
-        return prompt_valor
+        prompt = self.cursor.fetchone()[0]
+        return prompt
+    
+    def insert_prompt(self, column_name, prompt, item):
+        query = "SELECT item.cod_item, prompt_etp.id_prompt, prompt_etp.cod_orgao, prompt_etp.cod_unidade FROM item JOIN prompt_etp ON item.cod_item = prompt_etp.cod_item WHERE item.descricao_item = %s"
+        self.cursor.execute(query, (item,))
+        record = self.cursor.fetchone()
+
+        if record:
+            cod_item = record[0]
+            id_prompt = record[1]
+            cod_orgao = record[2]
+            cod_unidade = record[3]
+
+            # Em seguida, verificamos se já existe um registro na tabela `etp` para o item
+            query2 = "SELECT id_prompt FROM etp WHERE cod_item = %s"
+            self.cursor.execute(query2, (cod_item,))
+            existing_record = self.cursor.fetchone()
+
+            if not existing_record:
+                # Se não houver um registro na tabela `etp` para o item, inserimos um novo
+                insert_query = "INSERT INTO etp (id_prompt, cod_orgao, cod_unidade, cod_item) VALUES (%s, %s, %s, %s)"
+                self.cursor.execute(insert_query, (id_prompt, cod_orgao, cod_unidade, cod_item))
+                self.conexao.commit()
+
+            # Em seguida, inserimos o prompt na coluna especificada na tabela `etp`
+            update_query = f"UPDATE etp SET {column_name} = %s WHERE cod_item = %s"
+            self.cursor.execute(update_query, (prompt, cod_item))
+            self.conexao.commit()
+        else:
+            print("Item não encontrado.")
+
     
     def gerar_documento_etp(self, selected):
-        try:
-            doc = Document()
-            doc.add_heading("Documentos Gerados", level=1)
+        doc = Document()
+        doc.add_heading("Documentos Gerados", level=1)
 
-            for i in range(1, 9):
-                titulo = PromptsInfo.get_titulo_name(i)
-                doc.add_heading(titulo, level=1)
-                for item in selected:
-                    prompt_valor = self.search_etp_data(i, item)
-                    resposta = self.generate_response(prompt_valor)
-                    doc.add_paragraph(resposta)
+        for i in range(1, 9):
+            titulo = PromptsInfo.get_title_etp(i)
+            doc.add_heading(titulo, level=1)
+            for item in selected:
+                prompt = self.search_prompt_etp(i, item)
+                print(prompt)
+                resposta = self.generate_response(prompt)
+                self.insert_prompt(PromptsInfo.get_column_etp(i), resposta, item)
+                doc.add_paragraph(resposta)
 
-            doc_gerado = self.save_document(doc)
-            os.system(f"start {doc_gerado}")
-        except Exception as e:
-            QMessageBox.warning(self, 'Erro ao gerar documentos', f'Ocorreu um erro: {str(e)}')
+        self.save_document(doc)
     
     def search_tr_data(self, i, item):
-        prompt_nome = PromptsInfo.get_prompt_tr(i)
+        column_name = PromptsInfo.get_column_tr(i)
         cod_item = self.get_item_code(item)
-        query = f"SELECT {prompt_nome} FROM prompt_tr WHERE cod_item = %s;"
+        query = f"SELECT {column_name} FROM prompt_tr WHERE cod_item = %s;"
         self.cursor.execute(query, (cod_item,))
-        prompt_valor = self.cursor.fetchone()[0]
-        return prompt_valor
+        prompt = self.cursor.fetchone()[0]
+        return prompt
         
     def gerar_documentos_tr(self, selected):
         try:
@@ -82,9 +108,8 @@ class GeradorDocumentos(QWidget):
                     prompt_valor = self.search_tr_data(i, item)
                     resposta = self.generate_response(prompt_valor)
                     doc.add_paragraph(resposta)
-
-            doc_gerado = self.save_document(doc)
-            # os.system(f"start {doc_gerado}")
+            
+            self.save_document(doc)
 
         except Exception as e:
             QMessageBox.warning(self, 'Erro ao gerar documentos', f'Ocorreu um erro: {str(e)}')

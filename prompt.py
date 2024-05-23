@@ -1,6 +1,6 @@
 class PromptsInfo:
     
-    PROMPT_TR_TITLES = {
+    COLUMN_TR_NAME = {
         1:  "descricao_objeto_tr",
         2:  "descricao_fundamentacao_contratacao",
         3:  "descricao_solucao",
@@ -13,7 +13,7 @@ class PromptsInfo:
         10: "adequacao_orcamentaria",
     }
 
-    TITULO_TR_TITLES = {
+    TITLES_TR = {
         1:  "Descrição do Objeto",
         2:  "Justificativa para Contratação",
         3:  "Solução Proposta",
@@ -27,7 +27,7 @@ class PromptsInfo:
         11: "Adequação Orçamentária",
     }
 
-    PROMPT_NAMES = {
+    COLUMN_ETP_NAME = {
         1: "descricao_objeto",
         2: "descricao_justificativa",
         3: "descricao_previsao_contratacao",
@@ -38,7 +38,7 @@ class PromptsInfo:
         8: "prompt_posicionamento_conclusivo",
     }
 
-    TITULO_NAMES = {
+    TITLES_ETP = {
         1: "Objeto",
         2: "Justificativa da necessidade da contratação, considerado o problema a ser resolvido sob a perspectiva do interesse público",
         3: "Demonstração da previsão da contratação",
@@ -50,17 +50,17 @@ class PromptsInfo:
     }
 
     @staticmethod
-    def get_prompt_tr(number):
-        return PromptsInfo.PROMPT_TR_TITLES.get(number, 'Desconhecido')
+    def get_column_tr(number):
+        return PromptsInfo.COLUMN_TR_NAME.get(number, 'Desconhecido')
 
     @staticmethod
-    def get_titulo_tr(number):
-        return PromptsInfo.TITULO_TR_TITLES.get(number, 'Desconhecido')
+    def get_title_tr(number):
+        return PromptsInfo.TITLES_TR.get(number, 'Desconhecido')
 
     @staticmethod
-    def get_prompt_name(prompt_number):
-        return PromptsInfo.PROMPT_NAMES.get(prompt_number, 'Desconhecido')
+    def get_column_etp(prompt_number):
+        return PromptsInfo.COLUMN_ETP_NAME.get(prompt_number, 'Desconhecido')
 
     @staticmethod
-    def get_titulo_name(titulo_number):
-        return PromptsInfo.TITULO_NAMES.get(titulo_number, 'Desconhecido')
+    def get_title_etp(titulo_number):
+        return PromptsInfo.TITLES_ETP.get(titulo_number, 'Desconhecido')
