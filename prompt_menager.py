@@ -8,9 +8,9 @@ class MenagerPrompt:
         self.cursor = self.connection.cursor(buffered=True)
         # self.prompt_info = PromptsInfo()
         
-    def prompt_exists(self, item, column_name):
+    def prompt_exists(self, item, column_name, tabela):
         cod = self.get_code_item(item)
-        query = f'SELECT {column_name} FROM etp WHERE cod_item = %s'
+        query = f'SELECT {column_name} FROM {tabela} WHERE cod_item = %s'
         self.cursor.execute(query, (cod,))
         result = self.cursor.fetchone()
         if result:
@@ -47,6 +47,49 @@ class MenagerPrompt:
         else:
             print("Item não encontrado.")
 
+    def insert_prompt_tr(self, column_name, prompt, item):
+        try:
+            # Query to find the item details and related prompt_tr information
+            query = """
+            SELECT item.cod_item, prompt_tr.id_prompt_tr, prompt_tr.cod_orgao, prompt_tr.cod_unidade 
+            FROM item 
+            JOIN prompt_tr ON item.cod_item = prompt_tr.cod_item 
+            WHERE item.descricao_item = %s
+            """
+            self.cursor.execute(query, (item,))
+            record = self.cursor.fetchone()
+
+            if record:
+                cod_item = record[0]
+                id_prompt = record[1]
+                cod_orgao = record[2]
+                cod_unidade = record[3]
+
+                # Check if there is already a record in termo_referencia for the item
+                query2 = "SELECT id_prompt_tr FROM termo_referencia WHERE cod_item = %s"
+                self.cursor.execute(query2, (cod_item,))
+                existing_record = self.cursor.fetchone()
+
+                if not existing_record:
+                    # Insert a new record in termo_referencia if it doesn't exist
+                    insert_query = """
+                    INSERT INTO termo_referencia (id_prompt_tr, cod_orgao, cod_unidade, cod_item) 
+                    VALUES (%s, %s, %s, %s)
+                    """
+                    self.cursor.execute(insert_query, (id_prompt, cod_orgao, cod_unidade, cod_item))
+                    self.connection.commit()
+
+                # Update the specified column with the prompt in termo_referencia table
+                update_query = f"UPDATE termo_referencia SET {column_name} = %s WHERE cod_item = %s"
+                self.cursor.execute(update_query, (prompt, cod_item))
+                self.connection.commit()
+            else:
+                print("Item não encontrado.")
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+
     def get_code_item(self, desc):
         first_query = "SELECT cod_item FROM item WHERE descricao_item = %s"
         self.cursor.execute(first_query, (desc,))
@@ -61,7 +104,8 @@ class MenagerPrompt:
         prompt = self.cursor.fetchone()[0]
         return prompt
     
-    def search_prompt_tr(self, i, item, column_name):
+    def search_prompt_tr(self, i, item):
+        column_name = PromptsInfo.get_column_tr(i)
         cod_item = self.get_code_item(item)
         query = f"SELECT {column_name} FROM prompt_tr WHERE cod_item = %s;"
         self.cursor.execute(query, (cod_item,))

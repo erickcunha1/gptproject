@@ -40,7 +40,7 @@ class GeradorDocumentos(QWidget):
             doc.add_heading(titulo, level=1)
             for item in selected:
                 column_name = PromptsInfo.get_column_etp(i)
-                prompt_exists = self.prompt_manager.prompt_exists(item, column_name) # Verifica a existência na tabela ETP
+                prompt_exists = self.prompt_manager.prompt_exists(item, column_name, 'etp') # Verifica a existência na tabela ETP
                 if prompt_exists:
                     resposta = prompt_exists
                 else:
@@ -48,7 +48,6 @@ class GeradorDocumentos(QWidget):
                     resposta = self.generate_response(prompt)
                     self.prompt_manager.insert_prompt(PromptsInfo.get_column_etp(i), resposta, item)
                 doc.add_paragraph(resposta)
-
         self.save_document(doc)
         
     def gerar_documentos_tr(self, selected):
@@ -56,11 +55,26 @@ class GeradorDocumentos(QWidget):
         doc.add_heading("TERMO DE REFERÊNCIA - TR", level=1)
 
         for i in range(1, 11):
-            titulo = PromptsInfo.get_titulo_tr(i)
+            titulo = PromptsInfo.get_title_tr(i)
             doc.add_heading(text=titulo, level=1)
             for item in selected:
-                prompt_valor = self.search_tr_data(i, item)
-                resposta = self.generate_response(prompt_valor)
-                doc.add_paragraph(resposta)
+                column_name = PromptsInfo.get_column_etp(i)
 
+                if column_name is None:
+                    column_name = PromptsInfo.get_column_tr(i)
+                    prompt_exists = self.prompt_manager.prompt_exists(item, column_name, 'termo_referencia')
+                else:
+                    prompt_exists = self.prompt_manager.prompt_exists(item, column_name, 'etp')
+
+                if prompt_exists:
+                    resposta = prompt_exists
+                    self.prompt_manager.insert_prompt_tr(PromptsInfo.get_column_tr(i), resposta, item)
+                else:
+                    prompt = self.prompt_manager.search_prompt_tr(i, item)
+                    resposta = self.generate_response(prompt)
+                    self.prompt_manager.insert_prompt_tr(PromptsInfo.get_column_tr(i), resposta, item)
+                doc.add_paragraph(resposta)
         self.save_document(doc)
+
+    def verificar_etp_tr(self):
+        ...
