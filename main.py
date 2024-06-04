@@ -27,4 +27,4 @@ def execute(host, user, passwd, database):
         sys.exit()
 
 if __name__ == "__main__":
-    execute('localhost', 'root', 'Erick1@3$55', 'gdl')
+    execute('localhost', 'root', 'Erick1@3$5', 'gdl')

@@ -6,6 +6,7 @@ from docx import Document
 import dotenv
 import openai
 import os
+import re
 
 from prompt import PromptsInfo
 from prompt_menager import MenagerPrompt
@@ -31,6 +32,11 @@ class GeradorDocumentos(QWidget):
         doc.save(caminho_arquivo)
         return caminho_arquivo
     
+    def format_text(self, text):
+        regex = r"(Descrição do objeto:).*?\."
+        resultado = re.sub(regex, r'\1$', text)
+        return resultado
+
     def gerar_documento_etp(self, selected):
         doc = Document()
         doc.add_heading("Documentos Gerados", level=1)
@@ -40,7 +46,7 @@ class GeradorDocumentos(QWidget):
             doc.add_heading(titulo, level=1)
             for item in selected:
                 column_name = PromptsInfo.get_column_etp(i)
-                prompt_exists = self.prompt_manager.prompt_exists(item, column_name, 'etp') # Verifica a existência na tabela ETP
+                prompt_exists = self.prompt_manager.result_exists(item, column_name, 'etp') # Verifica a existência na tabela ETP
                 if prompt_exists:
                     resposta = prompt_exists
                 else:
@@ -58,23 +64,22 @@ class GeradorDocumentos(QWidget):
             titulo = PromptsInfo.get_title_tr(i)
             doc.add_heading(text=titulo, level=1)
             for item in selected:
-                column_name = PromptsInfo.get_column_etp(i)
+                column_name = PromptsInfo.get_column_tr(i)
+                column_name_etp = PromptsInfo.get_column_etp(i)
 
-                if column_name is None:
-                    column_name = PromptsInfo.get_column_tr(i)
-                    prompt_exists = self.prompt_manager.prompt_exists(item, column_name, 'termo_referencia')
-                else:
-                    prompt_exists = self.prompt_manager.prompt_exists(item, column_name, 'etp')
+                if column_name_etp is not None:
+                    result = self.prompt_manager.result_exists(item, column_name_etp, 'etp')
+                    print(result)
 
+                prompt_exists = self.prompt_manager.result_exists(item, column_name, 'termo_referencia') # Verifica a existência na tabela tr
                 if prompt_exists:
-                    resposta = prompt_exists
-                    self.prompt_manager.insert_prompt_tr(PromptsInfo.get_column_tr(i), resposta, item)
+                    resposta_inicial = prompt_exists
+                    if result is not None:
+                        resposta_formatada = self.format_text(resposta_inicial)
+                        resposta = resposta_formatada.replace('$', ' ' + result)
                 else:
-                    prompt = self.prompt_manager.search_prompt_tr(i, item)
+                    prompt = self.prompt_manager.search_prompt_tr(i, item) 
                     resposta = self.generate_response(prompt)
                     self.prompt_manager.insert_prompt_tr(PromptsInfo.get_column_tr(i), resposta, item)
                 doc.add_paragraph(resposta)
         self.save_document(doc)
-
-    def verificar_etp_tr(self):
-        ...

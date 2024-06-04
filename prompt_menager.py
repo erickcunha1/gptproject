@@ -8,7 +8,7 @@ class MenagerPrompt:
         self.cursor = self.connection.cursor(buffered=True)
         # self.prompt_info = PromptsInfo()
         
-    def prompt_exists(self, item, column_name, tabela):
+    def result_exists(self, item, column_name, tabela):
         cod = self.get_code_item(item)
         query = f'SELECT {column_name} FROM {tabela} WHERE cod_item = %s'
         self.cursor.execute(query, (cod,))
@@ -19,7 +19,11 @@ class MenagerPrompt:
             return None
         
     def insert_prompt(self, column_name, prompt, item):
-        query = "SELECT item.cod_item, prompt_etp.id_prompt, prompt_etp.cod_orgao, prompt_etp.cod_unidade FROM item JOIN prompt_etp ON item.cod_item = prompt_etp.cod_item WHERE item.descricao_item = %s"
+        query = """SELECT item.cod_item, prompt_etp.id_prompt, prompt_etp.cod_orgao, prompt_etp.cod_unidade 
+        FROM item 
+        JOIN prompt_etp ON item.cod_item = prompt_etp.cod_item 
+        WHERE item.descricao_item = %s"""
+
         self.cursor.execute(query, (item,))
         record = self.cursor.fetchone()
 
