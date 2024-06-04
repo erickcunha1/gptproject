@@ -9,7 +9,7 @@ import os
 
 from prompt import PromptsInfo
 from prompt_menager import MenagerPrompt
-from testclass import substituir_descricao_objeto
+from testclass import substituir_descricao_objeto, substituir_criterios_sustentabilidade
 
 class GeradorDocumentos(QWidget):
     def __init__(self, host, user, passwd, database=None):
@@ -75,12 +75,19 @@ class GeradorDocumentos(QWidget):
                     if column_name_etp == 'descricao_objeto':
                         string_tamanho = len(result) - 1
                         desc = result[:string_tamanho]
+                    # elif column_name_etp == 'requisitos_contratacao':
+                    #     string_tamanho = len(result) - 1
+                    #     desc = result[:string_tamanho]
 
                 prompt_exists = self.prompt_manager.result_exists(item, column_name, 'termo_referencia') # Verifica a existência na tabela tr
                 if prompt_exists:
                     resposta = prompt_exists
                     if result is not None and column_name_etp == 'descricao_objeto':
                         resposta1 = substituir_descricao_objeto(prompt_exists)
+                        resposta = resposta1.replace('$', ' ' + desc + ' ')
+                    elif result is not None and column_name_etp == 'requisitos_contratacao':
+                        resposta1 = substituir_criterios_sustentabilidade(prompt_exists)
+                        print(desc)
                         resposta = resposta1.replace('$', ' ' + desc + ' ')
                 else:
                     prompt = self.prompt_manager.search_prompt_tr(i, item) 
