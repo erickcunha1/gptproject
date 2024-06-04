@@ -6,10 +6,10 @@ from docx import Document
 import dotenv
 import openai
 import os
-import re
 
 from prompt import PromptsInfo
 from prompt_menager import MenagerPrompt
+from testclass import substituir_descricao_objeto
 
 class GeradorDocumentos(QWidget):
     def __init__(self, host, user, passwd, database=None):
@@ -32,14 +32,16 @@ class GeradorDocumentos(QWidget):
         doc.save(caminho_arquivo)
         return caminho_arquivo
     
-    def format_text(self, text):
-        regex = r"(Descrição do objeto:).*?\."
-        resultado = re.sub(regex, r'\1$', text)
-        return resultado
+    
+    # def remover_acentos(self, frase):
+    #     nfkd = unicodedata.normalize('NFKD', frase)
+    #     # Filtra apenas os caracteres que não são marcas de acentuação
+    #     frase_sem_acentos = ''.join([c for c in nfkd if not unicodedata.combining(c)])
+    #     return frase_sem_acentos
 
     def gerar_documento_etp(self, selected):
         doc = Document()
-        doc.add_heading("Documentos Gerados", level=1)
+        doc.add_heading("ETP", level=1)
 
         for i in range(1, 9):
             titulo = PromptsInfo.get_title_etp(i)
@@ -60,6 +62,7 @@ class GeradorDocumentos(QWidget):
         doc = Document()
         doc.add_heading("TERMO DE REFERÊNCIA - TR", level=1)
 
+        desc = None
         for i in range(1, 11):
             titulo = PromptsInfo.get_title_tr(i)
             doc.add_heading(text=titulo, level=1)
@@ -69,14 +72,16 @@ class GeradorDocumentos(QWidget):
 
                 if column_name_etp is not None:
                     result = self.prompt_manager.result_exists(item, column_name_etp, 'etp')
-                    print(result)
+                    if column_name_etp == 'descricao_objeto':
+                        string_tamanho = len(result) - 1
+                        desc = result[:string_tamanho]
 
                 prompt_exists = self.prompt_manager.result_exists(item, column_name, 'termo_referencia') # Verifica a existência na tabela tr
                 if prompt_exists:
-                    resposta_inicial = prompt_exists
-                    if result is not None:
-                        resposta_formatada = self.format_text(resposta_inicial)
-                        resposta = resposta_formatada.replace('$', ' ' + result)
+                    resposta = prompt_exists
+                    if result is not None and column_name_etp == 'descricao_objeto':
+                        resposta1 = substituir_descricao_objeto(prompt_exists)
+                        resposta = resposta1.replace('$', ' ' + desc + ' ')
                 else:
                     prompt = self.prompt_manager.search_prompt_tr(i, item) 
                     resposta = self.generate_response(prompt)
