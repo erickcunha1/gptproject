@@ -1,5 +1,6 @@
 from database import mysql_connection
 from prompt import PromptsInfo
+import mysql.connector
 
 
 class MenagerPrompt:
