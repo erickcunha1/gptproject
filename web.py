@@ -92,33 +92,40 @@ class GeradorDocumentos:
 
 # Configurações da aplicação Streamlit
 def main():
+    st.set_page_config(page_title='Gerador de Documentos Licitatórios', layout='wide')
     st.title('Gerador de Documentos Licitatórios')
-
 
     gerador = GeradorDocumentos('localhost', 'root', 'Erick1@3$5', 'gdl')
     cursor = gerador.prompt_manager.cursor
 
     st.header('Selecione os Itens')
 
-    cursor.execute('SELECT descricao_item FROM item order by descricao_item;')
+    cursor.execute('SELECT descricao_item FROM item ORDER BY descricao_item;')
     itens1 = cursor.fetchall()
     itens = [item[0] for item in itens1]
-    selected_items = st.multiselect('Itens', options=itens, placeholder='Selecione os itens')  # Substitua pelas suas opções reais
-    print(selected_items)
 
-    if st.button('Gerar Documento ETP'):
-        doc_etp = gerador.gerar_documento_etp(selected_items)
-        caminho_arquivo = gerador.save_document(doc_etp)
-        st.success(f'Documento ETP gerado: {caminho_arquivo}')
-        with open(caminho_arquivo, 'rb') as f:
-            st.download_button(label='Baixar Documento ETP', data=f, file_name='Documento_ETP.docx', mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        selected_items = st.multiselect('Itens', options=itens, placeholder='Selecione os itens')  # Lista de strings sem parênteses
+        print(selected_items)
+    
+    with col2:
+        if st.button('Gerar Documento ETP', type="primary"):
+            with st.spinner('Gerando documento ETP...'):
+                doc_etp = gerador.gerar_documento_etp(selected_items)
+                caminho_arquivo = gerador.save_document(doc_etp)
+                st.success(f'Documento ETP gerado: {caminho_arquivo}')
+                with open(caminho_arquivo, 'rb') as f:
+                    st.download_button(label='Baixar Documento ETP', data=f, file_name='Documento_ETP.docx', mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
-    if st.button('Gerar Documento TR'):
-        doc_tr = gerador.gerar_documentos_tr(selected_items)
-        caminho_arquivo = gerador.save_document(doc_tr)
-        st.success(f'Documento TR gerado: {caminho_arquivo}')
-        with open(caminho_arquivo, 'rb') as f:
-            st.download_button(label='Baixar Documento TR', data=f, file_name='Documento_TR.docx', mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        if st.button('Gerar Documento TR'):
+            with st.spinner('Gerando documento TR...', type="primary"):
+                doc_tr = gerador.gerar_documentos_tr(selected_items)
+                caminho_arquivo = gerador.save_document(doc_tr)
+                st.success(f'Documento TR gerado: {caminho_arquivo}')
+                with open(caminho_arquivo, 'rb') as f:
+                    st.download_button(label='Baixar Documento TR', data=f, file_name='Documento_TR.docx', mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
 if __name__ == '__main__':
     main()

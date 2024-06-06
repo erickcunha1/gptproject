@@ -80,12 +80,17 @@ class GeradorDocumentos(QWidget):
 
                 prompt_exists = self.prompt_manager.result_exists(item, column_name, 'termo_referencia')
 
-                if prompt_exists:
+                if prompt_exists and column_name_etp != 'descricao_justificativa' :
                     resposta = prompt_exists
                 else:
-                    prompt = self.prompt_manager.search_prompt_tr(i, item)
-                    resposta = self.generate_response(prompt)
-                    self.prompt_manager.insert_prompt_tr(column_name, resposta, item)
+                    if column_name_etp == 'descricao_justificativa' and self.prompt_manager.result_exists(item, 'descricao_justificativa', 'etp') == None and self.prompt_manager.result_exists(item, 'descricao_fundamentacao_contratacao', 'termo_referencia') == None:
+                        prompt_just = self.prompt_manager.search_prompt_etp(2, item)
+                        resposta = self.generate_response(prompt_just)
+                        self.prompt_manager.insert_prompt_tr(column_name, resposta, item)
+                    else:
+                        prompt = self.prompt_manager.search_prompt_tr(i, item)
+                        resposta = self.generate_response(prompt)
+                        self.prompt_manager.insert_prompt_tr(column_name, resposta, item)
 
                 if result and column_name_etp in ['descricao_objeto', 'requisitos_contratacao']:
                     resposta = self.process_response(resposta, desc, column_name_etp)
