@@ -9,7 +9,7 @@ import os
 
 from prompt import PromptsInfo
 from prompt_menager import MenagerPrompt
-from testclass import substituir_descricao_objeto, substituir_criterios_sustentabilidade
+from expressoes import substituir_descricao_objeto, substituir_criterios_sustentabilidade
 
 class GeradorDocumentos(QWidget):
     def __init__(self, host, user, passwd, database=None):
@@ -40,11 +40,12 @@ class GeradorDocumentos(QWidget):
             resposta = substituir_criterios_sustentabilidade(resposta).replace('$', ' ' + desc + ' ')
         return resposta
 
-    def gerar_documento_etp(self, selected):
+    def gerar_documento_etp(self, selected, objetos, unidades):
         doc = Document()
         doc.add_heading("ETP", level=1)
+        print(objetos, unidades)
 
-        for i in range(1, 9):
+        for i in range(1, 10):
             titulo = PromptsInfo.get_title_etp(i)
             doc.add_heading(titulo, level=1)
             for item in selected:
@@ -59,9 +60,10 @@ class GeradorDocumentos(QWidget):
                 doc.add_paragraph(resposta)
         self.save_document(doc)
         
-    def gerar_documentos_tr(self, selected):
+    def gerar_documentos_tr(self, selected, objetos, unidades):
         doc = Document()
         doc.add_heading("TERMO DE REFERÊNCIA - TR", level=1)
+        print(objetos, unidades)
 
         desc = None
         for i in range(1, 11):

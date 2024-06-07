@@ -90,9 +90,50 @@ class GeradorDocumentos:
                 doc.add_paragraph(resposta)
         return doc
 
-# Configurações da aplicação Streamlit
-def main():
-    st.set_page_config(page_title='Gerador de Documentos Licitatórios', layout='wide')
+# Tela de Login
+def login():
+    st.title('Login')
+    st.subheader('Por favor, faça o login para continuar.')
+
+    with st.form(key='login_form'):
+        email = st.text_input('Email')
+        senha = st.text_input('Senha', type='password')
+
+        if st.form_submit_button('Login'):
+            # Aqui você pode adicionar lógica para verificar as credenciais do usuário
+            if email == 'erick' and senha == 'erick':
+                st.success('Login bem-sucedido!')
+                st.session_state.logado = True
+            else:
+                st.error('Email ou senha incorretos.')
+
+    if st.button('Registrar'):
+        st.session_state.tela_atual = 'registro'
+
+# Tela de Registro
+def registro():
+    st.title('Registro')
+    st.subheader('Por favor, preencha as informações abaixo para continuar.')
+
+    with st.form(key='register_form'):
+        nome = st.text_input('Nome')
+        email = st.text_input('Email')
+        senha = st.text_input('Senha', type='password')
+        confirmar_senha = st.text_input('Confirmar Senha', type='password')
+
+        if st.form_submit_button('Registrar'):
+            if senha == confirmar_senha:
+                st.success('Registrado com sucesso!')
+                st.session_state.registrado = True
+                st.session_state.tela_atual = 'login'
+            else:
+                st.error('As senhas não coincidem. Tente novamente.')
+
+    if st.button('Já tem uma conta? Faça login'):
+        st.session_state.tela_atual = 'login'
+
+# Página de geração de documentos
+def gerar_documentos():
     st.title('Gerador de Documentos Licitatórios')
 
     gerador = GeradorDocumentos('localhost', 'root', 'Erick1@3$5', 'gdl')
@@ -105,11 +146,11 @@ def main():
     itens = [item[0] for item in itens1]
 
     col1, col2 = st.columns(2)
-    
+
     with col1:
         selected_items = st.multiselect('Itens', options=itens, placeholder='Selecione os itens')  # Lista de strings sem parênteses
         print(selected_items)
-    
+
     with col2:
         if st.button('Gerar Documento ETP', type="primary"):
             with st.spinner('Gerando documento ETP...'):
@@ -126,6 +167,34 @@ def main():
                 st.success(f'Documento TR gerado: {caminho_arquivo}')
                 with open(caminho_arquivo, 'rb') as f:
                     st.download_button(label='Baixar Documento TR', data=f, file_name='Documento_TR.docx', mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+
+# Configurações da aplicação Streamlit
+def main():
+    st.set_page_config(page_title='Gerador de Documentos Licitatórios', layout='wide')
+
+    if 'logado' not in st.session_state:
+        st.session_state.logado = False
+
+    if 'tela_atual' not in st.session_state:
+        st.session_state.tela_atual = 'login'
+
+    if st.session_state.tela_atual == 'registro':
+        registro()
+    elif st.session_state.tela_atual == 'login':
+        login()
+
+    if st.session_state.logado:
+        st.sidebar.title('Menu')
+        selected_page = st.sidebar.radio(
+            'Selecione uma opção:',
+            ['Gerar Documentos', 'Sair']
+        )
+
+        if selected_page == 'Gerar Documentos':
+            gerar_documentos()
+        elif selected_page == 'Sair':
+            st.session_state.logado = False
+            st.session_state.tela_atual = 'login'
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,3 @@
-import time
-from functools import partial
-
 from PyQt5.QtWidgets import (
     QProgressBar,
     QMainWindow,
@@ -12,46 +9,11 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QMessageBox,
 )
-from PyQt5.QtCore import (
-    QThread,
-    pyqtSignal,
-    pyqtSlot,
-    QTimer,
-)
-
+from PyQt5.QtCore import pyqtSlot
 from database import mysql_connection
 from gerador_doc import GeradorDocumentos
-
-
-class BackgroundWorkThread(QThread):
-    # Sinais para indicar progresso e conclusão do trabalho
-    task_finished = pyqtSignal()
- 
-    def __init__(self, work_function=None, items=None):
-        super().__init__()
-        self.work_function = work_function
-        self.items = items
-
-    def run(self):
-        self.work_function(self.items)
-        self.task_finished.emit()
-
-
-class ProgressBar(QThread):
-    update_progress = pyqtSignal(int)  # Sinal para atualizar a barra de progresso
-    
-    def __init__(self, total_time, total_items):
-        super().__init__()
-        self.total_time = total_time * total_items
-        self.start_time = time.time()
-
-    def run(self):
-        # Atualiza a barra de progresso conforme o tempo passa
-        while time.time() - self.start_time < self.total_time:
-            elapsed_time = time.time() - self.start_time
-            progress = int((elapsed_time / self.total_time) * 100)
-            self.update_progress.emit(progress)  # Atualiza a barra de progresso
-            time.sleep(0.5)  # Intervalo de atualização mais frequente para uma barra de progresso mais dinâmica
+from threads import BackgroundWorkThread, ProgressBar
+from unidade_Objeto import UnidadeObjeto
 
 
 class InterfaceGrafica(QMainWindow):
@@ -66,35 +28,31 @@ class InterfaceGrafica(QMainWindow):
         self.bd_open = False
         self.setupUI()
 
-
-    def iniciar_processo(self, function) -> None:
+    def iniciar_processo(self, function, *args) -> None:
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         if not selected_items:
             QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
             return
-        
-        # Criar e iniciar a thread de trabalho
+
         self.background_thread = BackgroundWorkThread(
             work_function=function,
-            items=selected_items
+            items=args
         )
 
-        # Criar e iniciar a thread da barra de progresso
         total_time = 50
         self.progress_thread = ProgressBar(total_time, len(selected_items))
-        
-        # Conectar os sinais ao método correspondente
+
         self.progress_thread.update_progress.connect(self.progress_bar.setValue)
         self.background_thread.task_finished.connect(self.on_task_finished)
-        
+
         self.background_thread.start()
         self.progress_thread.start()
-    
+
     @pyqtSlot()
     def on_task_finished(self) -> None:
         QMessageBox.information(self, "Concluído", "Documento gerado com sucesso!")
         self.progress_bar.setValue(0)
-    
+
     def setupUI(self) -> None:
         self.setWindowTitle("Gerador de Documentos Licitatórios")
         central_widget = QWidget(self)
@@ -124,20 +82,15 @@ class InterfaceGrafica(QMainWindow):
 
         self.mostrar_dados_button = QPushButton("Gerar Estudo Técnico Preliminar - ETP", self)
         self.mostrar_dados_button.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button.clicked.connect(partial(self.iniciar_processo, self.gerar_documento_etp))
-
+        self.mostrar_dados_button.clicked.connect(self.gerar_documento_etp)
 
         self.mostrar_dados_button2 = QPushButton("Gerar Termo de Referência - TR", self)
         self.mostrar_dados_button2.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button2.clicked.connect(partial(self.iniciar_processo, self.gerar_documentos_tr))
+        self.mostrar_dados_button2.clicked.connect(self.gerar_documentos_tr)
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(100)
-
-        self.reset_timer = QTimer()
-        self.reset_timer.setSingleShot(True)
-        self.reset_timer.timeout.connect(self.reset_progress_bar)
 
         layout.addWidget(self.label)
         layout.addWidget(self.button)
@@ -150,20 +103,50 @@ class InterfaceGrafica(QMainWindow):
 
         central_widget.setLayout(layout)
 
-        self.gerador_documentos = GeradorDocumentos(self.host, self.user, self.passwd, self.database)  # Instanciando GeradorDocumentos
-    
+        self.gerador_documentos = GeradorDocumentos(self.host, self.user, self.passwd, self.database)
+
     def reset_progress_bar(self) -> None:
         self.progress_bar.setValue(0)
 
-    def gerar_documento_etp(self, itens) -> None:
-        self.gerador_documentos.gerar_documento_etp(itens)
-        
-    def gerar_documentos_tr(self, itens) -> None:
-        self.gerador_documentos.gerar_documentos_tr(itens)
-  
+    def gerar_documento_etp(self) -> None:
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        if not selected_items:
+            QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
+            return
+
+        self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database, self.on_unidade_objeto_selecionado_etp)
+        self.unidade_objeto_window.show()
+
+    def on_unidade_objeto_selecionado_etp(self, selected_objeto_items, selected_unidade_items) -> None:
+        if not selected_objeto_items or not selected_unidade_items:
+            QMessageBox.warning(self, "Aviso", "Por favor, selecione pelo menos um objeto e uma unidade.")
+            return
+
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        self.iniciar_processo(self.gerador_documentos.gerar_documento_etp, selected_items, selected_objeto_items, selected_unidade_items)
+        self.unidade_objeto_window.close()
+
+    def gerar_documentos_tr(self) -> None:
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        if not selected_items:
+            QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
+            return
+
+        self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database, self.on_unidade_objeto_selecionado_tr)
+        self.unidade_objeto_window.show()
+
+    def on_unidade_objeto_selecionado_tr(self, selected_objeto_items, selected_unidade_items) -> None:
+        if not selected_objeto_items or not selected_unidade_items:
+            QMessageBox.warning(self, "Aviso", "Por favor, selecione pelo menos um objeto e uma unidade.")
+            return
+
+        selected_items = [item.text() for item in self.item_list.selectedItems()]
+        self.iniciar_processo(self.gerador_documentos.gerar_documentos_tr, selected_items, selected_objeto_items, selected_unidade_items)
+        self.unidade_objeto_window.close()
+
     def filtrar_itens(self) -> None:
         filtro = self.search_entry.text().strip().lower()
-        comando_sql = f"SELECT * FROM item WHERE LOWER(descricao_item) LIKE '%{filtro}%' order by descricao_item"
+        comando_sql = f"SELECT * FROM item WHERE LOWER(descricao_item) LIKE '%{filtro}%' ORDER BY descricao_item"
         self.cursor.execute(comando_sql)
 
         dados_lidos = self.cursor.fetchall()
@@ -182,12 +165,12 @@ class InterfaceGrafica(QMainWindow):
         if self.bd_open:
             return
         try:
-            self.cursor.execute('SELECT descricao_item FROM item order by descricao_item;')
+            self.cursor.execute('SELECT descricao_item FROM item ORDER BY descricao_item;')
             itens = self.cursor.fetchall()
             for item in itens:
-                valor = item[0]  # Obter o valor da coluna
+                valor = item[0]
                 self.item_list.addItem(valor)
-                self.bd_open = True  # Adicionar o valor à lista na interface gráfica
+            self.bd_open = True
         except Exception as e:
             QMessageBox.warning(self, 'Erro ao abrir arquivo', f'Ocorreu um erro ao abrir o arquivo: {str(e)}')
 
@@ -196,7 +179,6 @@ class InterfaceGrafica(QMainWindow):
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         print("Itens selecionados:", selected_items)
         if len(selected_items) > 30:
-            # Se o limite de 30 itens for ultrapassado, desmarcar o último item selecionado
             last_item = self.item_list.selectedItems()[-1]
             last_item.setSelected(False)
-            QMessageBox.warning(self, 'Atenção', 'Limite de 30 itens selecionados alcançado.') 
+            QMessageBox.warning(self, 'Atenção', 'Limite de 30 itens selecionados alcançado.')
