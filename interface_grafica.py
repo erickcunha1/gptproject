@@ -117,13 +117,13 @@ class InterfaceGrafica(QMainWindow):
         self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database, self.on_unidade_objeto_selecionado_etp)
         self.unidade_objeto_window.show()
 
-    def on_unidade_objeto_selecionado_etp(self, selected_objeto_items, selected_unidade_items) -> None:
-        if not selected_objeto_items or not selected_unidade_items:
+    def on_unidade_objeto_selecionado_etp(self, selected_objeto_items) -> None:
+        if not selected_objeto_items:
             QMessageBox.warning(self, "Aviso", "Por favor, selecione pelo menos um objeto e uma unidade.")
             return
 
         selected_items = [item.text() for item in self.item_list.selectedItems()]
-        self.iniciar_processo(self.gerador_documentos.gerar_documento_etp, selected_items, selected_objeto_items, selected_unidade_items)
+        self.iniciar_processo(self.gerador_documentos.gerar_documento_etp, selected_items, selected_objeto_items)
         self.unidade_objeto_window.close()
 
     def gerar_documentos_tr(self) -> None:
@@ -132,16 +132,16 @@ class InterfaceGrafica(QMainWindow):
             QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
             return
 
-        self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database, self.on_unidade_objeto_selecionado_tr)
+        self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database)
         self.unidade_objeto_window.show()
 
-    def on_unidade_objeto_selecionado_tr(self, selected_objeto_items, selected_unidade_items) -> None:
-        if not selected_objeto_items or not selected_unidade_items:
+    def on_unidade_objeto_selecionado_tr(self, selected_objeto_items) -> None:
+        if not selected_objeto_items:
             QMessageBox.warning(self, "Aviso", "Por favor, selecione pelo menos um objeto e uma unidade.")
             return
 
         selected_items = [item.text() for item in self.item_list.selectedItems()]
-        self.iniciar_processo(self.gerador_documentos.gerar_documentos_tr, selected_items, selected_objeto_items, selected_unidade_items)
+        self.iniciar_processo(self.gerador_documentos.gerar_documentos_tr, selected_items, selected_objeto_items)
         self.unidade_objeto_window.close()
 
     def filtrar_itens(self) -> None:

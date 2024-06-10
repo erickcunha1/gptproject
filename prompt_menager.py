@@ -9,17 +9,16 @@ class MenagerPrompt:
         self.cursor = self.connection.cursor(buffered=True)
         # self.prompt_info = PromptsInfo()
         
-    def result_exists(self, item, column_name, tabela):
+    def result_exists(self, item, column_name, tabela, cod_unidade):
         cod = self.get_code_item(item)
-        query = f'SELECT {column_name} FROM {tabela} WHERE cod_item = %s'
-        self.cursor.execute(query, (cod,))
+        query = f'SELECT {column_name} FROM {tabela} WHERE cod_item = %s and cod_unidade = %s' 
+        self.cursor.execute(query, (cod, cod_unidade,))
         result = self.cursor.fetchone()
         if result:
             return result[0]
-        else:
-            return None
+        return None
         
-    def insert_prompt(self, column_name, prompt, item):
+    def insert_prompt(self, column_name, prompt, item, unidade):
         query = """SELECT item.cod_item, prompt_etp.id_prompt, prompt_etp.cod_orgao, prompt_etp.cod_unidade 
         FROM item 
         JOIN prompt_etp ON item.cod_item = prompt_etp.cod_item 
@@ -35,19 +34,20 @@ class MenagerPrompt:
             cod_unidade = record[3]
 
             # Em seguida, verificamos se já existe um registro na tabela `etp` para o item
-            query2 = "SELECT id_prompt FROM etp WHERE cod_item = %s"
-            self.cursor.execute(query2, (cod_item,))
+            query2 = "SELECT id_prompt FROM etp WHERE cod_unidade = %s AND cod_item = %s;"
+            self.cursor.execute(query2, (unidade, cod_item))
             existing_record = self.cursor.fetchone()
+            print(existing_record)
 
             if not existing_record:
-                # Se não houver um registro na tabela `etp` para o item, inserimos um novo
+                # # Se não houver um registro na tabela `etp` para o item, inserimos um novo
                 insert_query = "INSERT INTO etp (id_prompt, cod_orgao, cod_unidade, cod_item) VALUES (%s, %s, %s, %s)"
-                self.cursor.execute(insert_query, (id_prompt, cod_orgao, cod_unidade, cod_item))
+                self.cursor.execute(insert_query, (id_prompt, cod_orgao, unidade, cod_item))
                 self.connection.commit()
 
             # Em seguida, inserimos o prompt na coluna especificada na tabela `etp`
-            update_query = f"UPDATE etp SET {column_name} = %s WHERE cod_item = %s"
-            self.cursor.execute(update_query, (prompt, cod_item))
+            update_query = f"UPDATE etp SET {column_name} = %s WHERE cod_item = %s AND cod_unidade = %s"
+            self.cursor.execute(update_query, (prompt, cod_item, unidade,))
             self.connection.commit()
         else:
             print("Item não encontrado.")
@@ -101,13 +101,15 @@ class MenagerPrompt:
         result = self.cursor.fetchone()
         return result[0]
     
-    def search_prompt_etp(self, i, item):
+    def search_prompt_etp(self, i, item, objeto):
         column_name = PromptsInfo.get_column_etp(i)
         cod_item = self.get_code_item(item)
-        query = f"SELECT {column_name} FROM prompt_etp WHERE cod_item = %s;"
-        self.cursor.execute(query, (cod_item,))
-        prompt = self.cursor.fetchone()[0]
-        return prompt
+        query = f"SELECT {column_name} FROM prompt_etp WHERE cod_item = %s AND cod_unidade = %s;"
+        self.cursor.execute(query, (cod_item, objeto,))
+        prompt = self.cursor.fetchone()
+        if prompt:
+            return prompt[0]
+        return None
     
     def search_prompt_tr(self, i, item):
         column_name = PromptsInfo.get_column_tr(i)
