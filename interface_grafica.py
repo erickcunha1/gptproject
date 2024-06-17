@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import pyqtSlot
 from database import mysql_connection
-from gerador_doc import GeradorDocumentos
+from gerador_doc import DocumentGenerator
 from threads import BackgroundWorkThread, ProgressBar
 from unidade_Objeto import UnidadeObjeto
 
@@ -24,7 +24,7 @@ class InterfaceGrafica(QMainWindow):
         self.passwd = passwd
         self.database = database
         self.conexao = mysql_connection(host, user, passwd, database)
-        self.cursor = self.conexao.cursor()
+        self.cursor = self.conexao.cursor(buffered=True)
         self.bd_open = False
         self.setupUI()
 
@@ -82,11 +82,11 @@ class InterfaceGrafica(QMainWindow):
 
         self.mostrar_dados_button = QPushButton("Gerar Estudo Técnico Preliminar - ETP", self)
         self.mostrar_dados_button.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button.clicked.connect(self.gerar_documento_etp)
+        self.mostrar_dados_button.clicked.connect(self.generate_etp_document)
 
         self.mostrar_dados_button2 = QPushButton("Gerar Termo de Referência - TR", self)
         self.mostrar_dados_button2.setStyleSheet("font-size: 12px; background-color: #E74C3C; color: white;")
-        self.mostrar_dados_button2.clicked.connect(self.gerar_documentos_tr)
+        self.mostrar_dados_button2.clicked.connect(self.generate_tr_document)
 
         self.progress_bar = QProgressBar(self)
         self.progress_bar.setMinimum(0)
@@ -103,12 +103,12 @@ class InterfaceGrafica(QMainWindow):
 
         central_widget.setLayout(layout)
 
-        self.gerador_documentos = GeradorDocumentos(self.host, self.user, self.passwd, self.database)
+        self.gerador_documentos = DocumentGenerator(self.host, self.user, self.passwd, self.database)
 
     def reset_progress_bar(self) -> None:
         self.progress_bar.setValue(0)
 
-    def gerar_documento_etp(self) -> None:
+    def generate_etp_document(self) -> None:
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         if not selected_items:
             QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
@@ -123,16 +123,16 @@ class InterfaceGrafica(QMainWindow):
             return
 
         selected_items = [item.text() for item in self.item_list.selectedItems()]
-        self.iniciar_processo(self.gerador_documentos.gerar_documento_etp, selected_items, selected_objeto_items)
+        self.iniciar_processo(self.gerador_documentos.generate_etp_document, selected_items, selected_objeto_items)
         self.unidade_objeto_window.close()
 
-    def gerar_documentos_tr(self) -> None:
+    def generate_tr_document(self) -> None:
         selected_items = [item.text() for item in self.item_list.selectedItems()]
         if not selected_items:
             QMessageBox.warning(self, "Aviso", "Nenhum item selecionado.")
             return
 
-        self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database)
+        self.unidade_objeto_window = UnidadeObjeto(selected_items, self.host, self.user, self.passwd, self.database, self.on_unidade_objeto_selecionado_tr)
         self.unidade_objeto_window.show()
 
     def on_unidade_objeto_selecionado_tr(self, selected_objeto_items) -> None:
@@ -141,7 +141,7 @@ class InterfaceGrafica(QMainWindow):
             return
 
         selected_items = [item.text() for item in self.item_list.selectedItems()]
-        self.iniciar_processo(self.gerador_documentos.gerar_documentos_tr, selected_items, selected_objeto_items)
+        self.iniciar_processo(self.gerador_documentos.generate_tr_document, selected_items, selected_objeto_items)
         self.unidade_objeto_window.close()
 
     def filtrar_itens(self) -> None:

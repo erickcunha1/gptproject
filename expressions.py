@@ -1,7 +1,7 @@
 
 import re
 
-def substituir_descricao_objeto(texto):
+def replace_object_description(texto):
     padrao_1 = r"(Descrição do objeto:).*?\."
     texto = re.sub(padrao_1, r'\1$', texto, flags=re.DOTALL)
 
@@ -11,7 +11,7 @@ def substituir_descricao_objeto(texto):
 
     return texto
 
-def substituir_criterios_sustentabilidade(texto):
+def replace_sustainability_criteria(texto):
     padrao_1 = r"(4\.1 Além dos critérios de sustentabilidade eventualmente inseridos na descrição do objeto,).*?(outros critérios que também devem ser atendidos)"
     texto = re.sub(padrao_1, r'\1$', texto, flags=re.DOTALL)
 
